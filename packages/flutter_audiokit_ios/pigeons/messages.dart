@@ -202,6 +202,12 @@ abstract class AudioKitHostApi {
     double delay,
   );
 
+  // ---- Oscillator (generator) ----
+  PlatformNodeHandle createOscillator(
+    double frequency,
+    double amplitude,
+  );
+
   // ---- Effects ----
   PlatformNodeHandle createEffect(
     String inputNodeId,

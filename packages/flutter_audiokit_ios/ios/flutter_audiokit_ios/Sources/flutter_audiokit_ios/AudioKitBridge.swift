@@ -446,6 +446,19 @@ class AudioKitBridge: AudioKitHostApi {
                           details: nil)
     }
 
+    // MARK: - Oscillator
+
+    func createOscillator(frequency: Double, amplitude: Double) throws -> PlatformNodeHandle {
+        let nodeId = generateId()
+        let osc = Oscillator(
+            waveform: Table(.sine),
+            frequency: AUValue(frequency),
+            amplitude: AUValue(amplitude)
+        )
+        nodes[nodeId] = osc
+        return PlatformNodeHandle(nodeId: nodeId, nodeType: "Oscillator")
+    }
+
     // MARK: - Effects
 
     func createEffect(inputNodeId: String, effectType: String, params: [String: Double]) throws -> PlatformNodeHandle {
@@ -709,7 +722,7 @@ class AudioKitBridge: AudioKitHostApi {
         case "AutoPanner":
             node = AutoPanner(input, frequency: p("frequency", 10), depth: p("depth", 1))
         case "Vibrato":
-            node = Vibrato(input, vibratoSpeed: p("speed", 1), vibratoDepth: p("depth", 1))
+            node = Vibrato(input, speed: p("speed", 1), depth: p("depth", 1))
         // ---- SoundpipeAudioKit Phase 3: Spatial ----
         case "StringResonator":
             node = StringResonator(input,

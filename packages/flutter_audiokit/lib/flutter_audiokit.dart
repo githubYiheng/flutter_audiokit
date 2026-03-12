@@ -25,6 +25,7 @@ export 'src/audio_engine.dart';
 export 'src/audio_player.dart';
 export 'src/mixer.dart';
 export 'src/node.dart';
+export 'src/oscillator.dart';
 export 'src/node_parameter.dart';
 export 'src/time_pitch.dart';
 export 'src/vari_speed.dart';

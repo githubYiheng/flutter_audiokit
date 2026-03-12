@@ -289,6 +289,16 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   /// [effectType] matches the AudioKit class name (e.g., 'ZitaReverb',
   /// 'MoogLadder').
   /// [params] is a map of parameter identifier to value.
+  /// Creates an Oscillator (sine wave generator).
+  ///
+  /// Returns the node ID.
+  Future<String> createOscillator({
+    double frequency = 440,
+    double amplitude = 1.0,
+  }) {
+    throw UnimplementedError('createOscillator() not implemented.');
+  }
+
   Future<String> createEffect(
     String inputNodeId,
     String effectType,

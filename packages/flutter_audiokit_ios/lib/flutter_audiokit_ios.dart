@@ -10,12 +10,21 @@ import 'src/messages.g.dart';
 /// the `flutter_audiokit` app-facing package.
 class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   /// Creates a new [FlutterAudioKitIOS] instance.
-  FlutterAudioKitIOS() : _hostApi = AudioKitHostApi() {
-    _setupFlutterApi();
-    _setupEventChannels();
+  FlutterAudioKitIOS();
+
+  AudioKitHostApi? _hostApiInstance;
+  bool _flutterApiSetUp = false;
+
+  AudioKitHostApi get _hostApi {
+    _ensureInitialized();
+    return _hostApiInstance!;
   }
 
-  final AudioKitHostApi _hostApi;
+  void _ensureInitialized() {
+    if (_hostApiInstance != null) return;
+    _hostApiInstance = AudioKitHostApi();
+    _setupFlutterApi();
+  }
 
   // Stream controllers for event forwarding
   final _playbackStateController = StreamController<PlaybackState>.broadcast();
@@ -30,6 +39,8 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   }
 
   void _setupFlutterApi() {
+    if (_flutterApiSetUp) return;
+    _flutterApiSetUp = true;
     final flutterApi = _FlutterApiHandler(
       onPlaybackState: (state) {
         _playbackStateController.add(PlaybackState(
@@ -291,6 +302,15 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
       _hostApi.rampNodeParameter(nodeId, identifier, value, duration, delay);
 
   // ==== Effects ====
+
+  @override
+  Future<String> createOscillator({
+    double frequency = 440,
+    double amplitude = 1.0,
+  }) async {
+    final handle = await _hostApi.createOscillator(frequency, amplitude);
+    return handle.nodeId;
+  }
 
   @override
   Future<String> createEffect(
