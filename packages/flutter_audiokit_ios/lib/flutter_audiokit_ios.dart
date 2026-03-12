@@ -22,6 +22,7 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   final _playbackCompletedController = StreamController<String>.broadcast();
   final _amplitudeController = StreamController<AudioLevelData>.broadcast();
   final _errorController = StreamController<AudioKitError>.broadcast();
+  final _pitchController = StreamController<PitchData>.broadcast();
 
   /// Registers this class as the platform implementation.
   static void registerWith() {
@@ -49,11 +50,20 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
           rightAmplitude: data.rightAmplitude,
         ));
       },
-      onError: (nodeId, code, message) {
+      onErrorCallback: (nodeId, code, message) {
         _errorController.add(AudioKitError(
           nodeId: nodeId,
           code: code,
           message: message,
+        ));
+      },
+      onPitch: (data) {
+        _pitchController.add(PitchData(
+          nodeId: data.nodeId,
+          leftPitch: data.leftPitch,
+          rightPitch: data.rightPitch,
+          leftAmplitude: data.leftAmplitude,
+          rightAmplitude: data.rightAmplitude,
         ));
       },
     );
@@ -160,7 +170,7 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
     double volume = 1.0,
     String? name,
   }) async {
-    final handle = _hostApi.createMixer(inputNodeIds, volume, name);
+    final handle = await _hostApi.createMixer(inputNodeIds, volume, name);
     return handle.nodeId;
   }
 
@@ -199,7 +209,7 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
     double pitch = 0.0,
     double overlap = 8.0,
   }) async {
-    final handle = _hostApi.createTimePitch(inputNodeId, rate, pitch, overlap);
+    final handle = await _hostApi.createTimePitch(inputNodeId, rate, pitch, overlap);
     return handle.nodeId;
   }
 
@@ -220,7 +230,7 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   @override
   Future<String> createVariSpeed(String inputNodeId,
       {double rate = 1.0}) async {
-    final handle = _hostApi.createVariSpeed(inputNodeId, rate);
+    final handle = await _hostApi.createVariSpeed(inputNodeId, rate);
     return handle.nodeId;
   }
 
@@ -252,7 +262,7 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
 
   @override
   Future<List<NodeParameterInfo>> getNodeParameters(String nodeId) async {
-    final infos = _hostApi.getNodeParameters(nodeId);
+    final infos = await _hostApi.getNodeParameters(nodeId);
     return infos
         .map((i) => NodeParameterInfo(
               identifier: i.identifier,
@@ -288,7 +298,22 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
     String effectType,
     Map<String, double> params,
   ) async {
-    final handle = _hostApi.createEffect(inputNodeId, effectType, params);
+    final handle = await _hostApi.createEffect(inputNodeId, effectType, params);
+    return handle.nodeId;
+  }
+
+  @override
+  Future<void> loadReverbPreset(String nodeId, int presetIndex) async =>
+      _hostApi.loadReverbPreset(nodeId, presetIndex);
+
+  @override
+  Future<String> createConvolution(
+    String inputNodeId,
+    String impulseResponseFilePath,
+    int partitionLength,
+  ) async {
+    final handle = await _hostApi.createConvolution(
+        inputNodeId, impulseResponseFilePath, partitionLength);
     return handle.nodeId;
   }
 
@@ -302,6 +327,14 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   @override
   Future<void> stopAmplitudeTap(String nodeId) async =>
       _hostApi.stopAmplitudeTap(nodeId);
+
+  @override
+  Future<void> startPitchTap(String nodeId, {int bufferSize = 4096}) async =>
+      _hostApi.startPitchTap(nodeId, bufferSize);
+
+  @override
+  Future<void> stopPitchTap(String nodeId) async =>
+      _hostApi.stopPitchTap(nodeId);
 
   // ==== Streams ====
 
@@ -318,6 +351,9 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
 
   @override
   Stream<AudioKitError> get onError => _errorController.stream;
+
+  @override
+  Stream<PitchData> get onPitchData => _pitchController.stream;
 
   // ==== Settings ====
 
@@ -336,13 +372,15 @@ class _FlutterApiHandler implements AudioKitFlutterApi {
     required this.onPlaybackState,
     required this.onCompleted,
     required this.onAmplitude,
-    required this.onError,
+    required this.onErrorCallback,
+    required this.onPitch,
   });
 
   final void Function(PlatformPlaybackState) onPlaybackState;
   final void Function(String) onCompleted;
   final void Function(PlatformAudioLevelData) onAmplitude;
-  final void Function(String nodeId, String code, String message) onError;
+  final void Function(String nodeId, String code, String message) onErrorCallback;
+  final void Function(PlatformPitchData) onPitch;
 
   @override
   void onPlaybackStateChanged(PlatformPlaybackState state) =>
@@ -356,5 +394,8 @@ class _FlutterApiHandler implements AudioKitFlutterApi {
 
   @override
   void onError(String nodeId, String code, String message) =>
-      onError(nodeId, code, message);
+      onErrorCallback(nodeId, code, message);
+
+  @override
+  void onPitchData(PlatformPitchData data) => onPitch(data);
 }

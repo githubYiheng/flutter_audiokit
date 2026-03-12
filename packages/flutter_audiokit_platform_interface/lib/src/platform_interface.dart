@@ -297,6 +297,24 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
     throw UnimplementedError('createEffect() not implemented.');
   }
 
+  /// Loads a factory preset on a Reverb node.
+  ///
+  /// Mirrors `reverb.loadFactoryPreset(preset)`.
+  Future<void> loadReverbPreset(String nodeId, int presetIndex) {
+    throw UnimplementedError('loadReverbPreset() not implemented.');
+  }
+
+  /// Creates a Convolution effect node with an impulse response file.
+  ///
+  /// Mirrors SoundpipeAudioKit's `Convolution(input, impulseResponseFileURL:partitionLength:)`.
+  Future<String> createConvolution(
+    String inputNodeId,
+    String impulseResponseFilePath,
+    int partitionLength,
+  ) {
+    throw UnimplementedError('createConvolution() not implemented.');
+  }
+
   // ===========================================================
   // Taps (Analysis)
   // ===========================================================
@@ -309,6 +327,16 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   /// Stops the AmplitudeTap on the given node.
   Future<void> stopAmplitudeTap(String nodeId) {
     throw UnimplementedError('stopAmplitudeTap() not implemented.');
+  }
+
+  /// Starts a PitchTap on the given node.
+  Future<void> startPitchTap(String nodeId, {int bufferSize = 4096}) {
+    throw UnimplementedError('startPitchTap() not implemented.');
+  }
+
+  /// Stops the PitchTap on the given node.
+  Future<void> stopPitchTap(String nodeId) {
+    throw UnimplementedError('stopPitchTap() not implemented.');
   }
 
   // ===========================================================
@@ -333,6 +361,11 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   /// Stream of errors from the native layer.
   Stream<AudioKitError> get onError {
     throw UnimplementedError('onError not implemented.');
+  }
+
+  /// Stream of pitch data from active PitchTaps.
+  Stream<PitchData> get onPitchData {
+    throw UnimplementedError('onPitchData not implemented.');
   }
 
   // ===========================================================

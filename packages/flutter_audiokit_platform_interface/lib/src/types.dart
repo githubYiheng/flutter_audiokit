@@ -96,6 +96,23 @@ enum BufferLength {
   int get samplesCount => 1 << powerOfTwo;
 }
 
+/// Mirrors Apple's AVAudioUnitReverbPreset.
+enum ReverbPreset {
+  smallRoom,
+  mediumRoom,
+  largeRoom,
+  mediumHall,
+  largeHall,
+  plate,
+  mediumChamber,
+  largeChamber,
+  cathedral,
+  largeRoom2,
+  mediumHall2,
+  mediumHall3,
+  largeHall2,
+}
+
 /// Node parameter metadata, mirrors AudioKit's NodeParameterDef.
 class NodeParameterInfo {
   const NodeParameterInfo({
@@ -113,6 +130,23 @@ class NodeParameterInfo {
   final double defaultValue;
   final double minValue;
   final double maxValue;
+}
+
+/// Pitch detection data from PitchTap.
+class PitchData {
+  const PitchData({
+    required this.nodeId,
+    required this.leftPitch,
+    required this.rightPitch,
+    required this.leftAmplitude,
+    required this.rightAmplitude,
+  });
+
+  final String nodeId;
+  final double leftPitch;
+  final double rightPitch;
+  final double leftAmplitude;
+  final double rightAmplitude;
 }
 
 /// Error from the AudioKit native layer.

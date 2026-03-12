@@ -60,6 +60,22 @@ class PlatformAudioLevelData {
   final double rightAmplitude;
 }
 
+/// Pitch detection data from PitchTap.
+class PlatformPitchData {
+  PlatformPitchData({
+    required this.nodeId,
+    required this.leftPitch,
+    required this.rightPitch,
+    required this.leftAmplitude,
+    required this.rightAmplitude,
+  });
+  final String nodeId;
+  final double leftPitch;
+  final double rightPitch;
+  final double leftAmplitude;
+  final double rightAmplitude;
+}
+
 /// Node parameter info.
 class PlatformNodeParameterInfo {
   PlatformNodeParameterInfo({
@@ -186,17 +202,30 @@ abstract class AudioKitHostApi {
     double delay,
   );
 
-  // ---- Effects (generic factory for Phase 2) ----
+  // ---- Effects ----
   PlatformNodeHandle createEffect(
     String inputNodeId,
     String effectType,
     Map<String, double> params,
   );
 
+  void loadReverbPreset(String nodeId, int presetIndex);
+
+  /// Creates a Convolution effect node with an impulse response file.
+  PlatformNodeHandle createConvolution(
+    String inputNodeId,
+    String impulseResponseFilePath,
+    int partitionLength,
+  );
+
   // ---- Taps ----
   void startAmplitudeTap(String nodeId, int bufferSize);
 
   void stopAmplitudeTap(String nodeId);
+
+  void startPitchTap(String nodeId, int bufferSize);
+
+  void stopPitchTap(String nodeId);
 
   // ---- Settings ----
   void setGlobalSampleRate(double sampleRate);
@@ -217,4 +246,6 @@ abstract class AudioKitFlutterApi {
   void onAmplitudeData(PlatformAudioLevelData data);
 
   void onError(String nodeId, String code, String message);
+
+  void onPitchData(PlatformPitchData data);
 }
