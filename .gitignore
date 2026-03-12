@@ -1,0 +1,44 @@
+# Dart/Flutter
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+pubspec.lock
+pubspec_overrides.yaml
+
+# IDE
+.idea/
+*.iml
+.vscode/*
+!.vscode/settings.json
+
+# Project docs (not for repo)
+CLAUDE.md
+PROJECT_STATUS.md
+
+# macOS
+.DS_Store
+
+# iOS
+**/ios/Pods/
+**/ios/.symlinks/
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+
+# Pigeon Generated
+**/*.g.dart
+**/*.g.swift
+**/GeneratedPluginRegistrant.*
+
+# Swift Package Manager
+.build/
+Package.resolved
+**/ios/.build/
+
+# Melos
+.melos/
+
+# FVM
+.fvm/

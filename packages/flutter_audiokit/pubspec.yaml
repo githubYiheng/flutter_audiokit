@@ -1,0 +1,25 @@
+name: flutter_audiokit
+description: Flutter plugin for AudioKit — audio synthesis, processing, and analysis on iOS.
+version: 0.1.0
+homepage: https://github.com/user/flutter_audiokit
+
+environment:
+  sdk: ">=3.3.0 <4.0.0"
+  flutter: ">=3.19.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_audiokit_platform_interface: ^0.1.0
+  flutter_audiokit_ios: ^0.1.0
+
+flutter:
+  plugin:
+    platforms:
+      ios:
+        default_package: flutter_audiokit_ios
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
