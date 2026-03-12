@@ -73,6 +73,14 @@
 ### Next Steps
 1. 用户提供 demo.mp3 到 example/assets/ 以便真机测试
 
+### Phase E 项目文档 ✅
+- [x] README.md（根目录）— 项目总览、安装指南、使用示例、架构说明、51 效果器列表
+- [x] packages/flutter_audiokit/README.md — App-facing 包文档、API 概览表、代码示例
+- [x] packages/flutter_audiokit_platform_interface/README.md — 平台接口说明、共享类型列表
+- [x] packages/flutter_audiokit_ios/README.md — iOS 实现说明、Pigeon 工作流、SPM 依赖
+- [x] example/README.md — 替换默认模板，说明 3 个 demo Tab 及运行方式
+- [x] CHANGELOG.md × 3 — flutter_audiokit / platform_interface / ios 各一份
+
 ### Key Findings
 - SoundpipeAudioKit 的 VariableDelay、TanhDistortion、BitCrusher、Phaser 的 dryWetMix 不在 init 参数中，需要创建后单独设置
 - Tremolo 和 AutoPanner 接受 Table（waveform）参数，默认 positiveSine，暂不桥接 Table 类型

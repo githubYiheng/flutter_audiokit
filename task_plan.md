@@ -76,6 +76,14 @@
   - types_test: 26 tests（6个数据类 + 8个枚举全覆盖）
 - [x] 确保所有效果器的参数范围与 AudioKit 源码一致（已验证 51 个效果器参数匹配）
 
+## Phase E — 项目文档 [status: complete]
+- [x] 根目录 README.md — 项目总览、安装、使用示例、架构、效果器列表、开发命令
+- [x] packages/flutter_audiokit/README.md — App-facing 包文档、API 概览、快速上手
+- [x] packages/flutter_audiokit_platform_interface/README.md — 平台接口说明、共享类型表
+- [x] packages/flutter_audiokit_ios/README.md — iOS 实现说明、Pigeon 代码生成、SPM 依赖
+- [x] example/README.md — 三个 Tab 功能介绍、运行方式、音频文件说明
+- [x] 3 个包 CHANGELOG.md — 0.1.0 初始版本记录
+
 ---
 
 ## Decisions Log
