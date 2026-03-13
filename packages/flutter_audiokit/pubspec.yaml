@@ -13,6 +13,7 @@ dependencies:
   flutter:
     sdk: flutter
   flutter_audiokit_platform_interface: ^0.1.0
+  flutter_audiokit_ios: ^0.1.0
 
 flutter:
   plugin:
