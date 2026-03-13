@@ -237,6 +237,9 @@ abstract class AudioKitHostApi {
   void setGlobalSampleRate(double sampleRate);
 
   void setGlobalBufferLength(int bufferLengthPower);
+
+  // ---- Logging ----
+  void setLogLevel(int level);
 }
 
 // ============================================================

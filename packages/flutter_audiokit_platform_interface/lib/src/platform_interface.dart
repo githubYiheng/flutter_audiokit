@@ -380,4 +380,11 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   Future<void> setGlobalBufferLength(BufferLength bufferLength) {
     throw UnimplementedError('setGlobalBufferLength() not implemented.');
   }
+
+  /// Sets the native log level.
+  ///
+  /// 0 = none, 1 = info, 2 = verbose.
+  Future<void> setLogLevel(int level) {
+    throw UnimplementedError('setLogLevel() not implemented.');
+  }
 }

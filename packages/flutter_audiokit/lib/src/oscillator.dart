@@ -1,5 +1,6 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// A sine wave oscillator (tone generator).
@@ -48,12 +49,14 @@ class Oscillator extends Node {
       frequency: frequency,
       amplitude: amplitude,
     );
+    AudioKitLogger.info('Oscillator created: $nodeId (freq=$frequency, amp=$amplitude)');
     return Oscillator._(nodeId, frequency: frequency, amplitude: amplitude);
   }
 
   /// Sets the frequency in Hz (0 - 20000).
   set frequency(double value) {
     _frequency = value;
+    AudioKitLogger.verbose('Oscillator($nodeId) frequency = $value');
     FlutterAudioKitPlatform.instance
         .setNodeParameter(nodeId, 'frequency', value);
   }
@@ -61,6 +64,7 @@ class Oscillator extends Node {
   /// Sets the amplitude (0.0 - 10.0).
   set amplitude(double value) {
     _amplitude = value;
+    AudioKitLogger.verbose('Oscillator($nodeId) amplitude = $value');
     FlutterAudioKitPlatform.instance
         .setNodeParameter(nodeId, 'amplitude', value);
   }

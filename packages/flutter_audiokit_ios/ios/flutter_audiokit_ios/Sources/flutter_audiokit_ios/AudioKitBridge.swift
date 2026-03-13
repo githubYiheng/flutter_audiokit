@@ -2,12 +2,33 @@ import AVFoundation
 import Flutter
 import AudioKit
 import SoundpipeAudioKit
+import os
 
 /// Bridge between Flutter Pigeon API and AudioKit.
 ///
 /// Manages a registry of native AudioKit objects keyed by UUID strings.
 /// All AudioKit operations are performed on the main thread.
 class AudioKitBridge: AudioKitHostApi {
+
+    // MARK: - Logging
+
+    /// Log level: 0 = none, 1 = info, 2 = verbose.
+    static var logLevel: Int = 0
+
+    private static let logger = Logger(
+        subsystem: "com.audiokit.flutter",
+        category: "AudioKitBridge"
+    )
+
+    private func logInfo(_ message: String) {
+        guard AudioKitBridge.logLevel >= 1 else { return }
+        AudioKitBridge.logger.info("\(message, privacy: .public)")
+    }
+
+    private func logVerbose(_ message: String) {
+        guard AudioKitBridge.logLevel >= 2 else { return }
+        AudioKitBridge.logger.debug("\(message, privacy: .public)")
+    }
 
     /// Callback channel for sending events to Dart.
     var flutterApi: AudioKitFlutterApi?
@@ -125,6 +146,7 @@ class AudioKitBridge: AudioKitHostApi {
         let engineId = generateId()
         let engine = AudioEngine()
         engines[engineId] = engine
+        logInfo("Engine created: \(engineId)")
         completion(.success(engineId))
     }
 
@@ -132,8 +154,10 @@ class AudioKitBridge: AudioKitHostApi {
         do {
             let engine = try getEngine(engineId)
             try engine.start()
+            logInfo("Engine started: \(engineId)")
             completion(.success(()))
         } catch {
+            logInfo("Engine start FAILED: \(engineId) — \(error)")
             completion(.failure(error))
         }
     }
@@ -141,23 +165,27 @@ class AudioKitBridge: AudioKitHostApi {
     func stopEngine(engineId: String) throws {
         let engine = try getEngine(engineId)
         engine.stop()
+        logInfo("Engine stopped: \(engineId)")
     }
 
     func pauseEngine(engineId: String) throws {
         let engine = try getEngine(engineId)
         engine.pause()
+        logInfo("Engine paused: \(engineId)")
     }
 
     func setEngineOutput(engineId: String, nodeId: String) throws {
         let engine = try getEngine(engineId)
         let node = try getNode(nodeId)
         engine.output = node
+        logInfo("Engine \(engineId) output set to node \(nodeId)")
     }
 
     func disposeEngine(engineId: String) throws {
         if let engine = engines.removeValue(forKey: engineId) {
             engine.stop()
         }
+        logInfo("Engine disposed: \(engineId)")
         // H-3: When no engines remain, clean up all nodes, taps, and timers
         // to prevent native resource leaks.
         if engines.isEmpty {
@@ -177,6 +205,7 @@ class AudioKitBridge: AudioKitHostApi {
         let nodeId = generateId()
         let player = AudioPlayer()
         nodes[nodeId] = player
+        logInfo("AudioPlayer created: \(nodeId)")
         completion(.success(PlatformNodeHandle(nodeId: nodeId, nodeType: "AudioPlayer")))
     }
 
@@ -191,8 +220,10 @@ class AudioKitBridge: AudioKitHostApi {
                 sampleRate: player.file?.fileFormat.sampleRate ?? 44100,
                 channels: Int64(player.file?.fileFormat.channelCount ?? 2)
             )
+            logInfo("AudioPlayer \(nodeId) loaded: \(filePath) (duration=\(player.duration)s)")
             completion(.success(info))
         } catch {
+            logInfo("AudioPlayer \(nodeId) load FAILED: \(filePath) — \(error)")
             completion(.failure(error))
         }
     }
@@ -210,6 +241,7 @@ class AudioKitBridge: AudioKitHostApi {
             from: startTime.map { TimeInterval($0) },
             to: endTime.map { TimeInterval($0) }
         )
+        logInfo("AudioPlayer \(nodeId) play (from=\(startTime as Any), to=\(endTime as Any))")
 
         sendPlayerState(nodeId: nodeId, player: player)
         startProgressTimer(nodeId: nodeId)
@@ -219,12 +251,14 @@ class AudioKitBridge: AudioKitHostApi {
         let player = try getPlayer(nodeId)
         player.pause()
         stopProgressTimer(nodeId: nodeId)
+        logInfo("AudioPlayer \(nodeId) paused")
         sendPlayerState(nodeId: nodeId, player: player)
     }
 
     func playerResume(nodeId: String) throws {
         let player = try getPlayer(nodeId)
         player.resume()
+        logInfo("AudioPlayer \(nodeId) resumed")
         sendPlayerState(nodeId: nodeId, player: player)
         startProgressTimer(nodeId: nodeId)
     }
@@ -233,28 +267,33 @@ class AudioKitBridge: AudioKitHostApi {
         let player = try getPlayer(nodeId)
         player.stop()
         stopProgressTimer(nodeId: nodeId)
+        logInfo("AudioPlayer \(nodeId) stopped")
         sendPlayerState(nodeId: nodeId, player: player)
     }
 
     func playerSeek(nodeId: String, time: Double) throws {
         let player = try getPlayer(nodeId)
         player.seek(time: TimeInterval(time))
+        logVerbose("AudioPlayer \(nodeId) seek to \(time)s")
         sendPlayerState(nodeId: nodeId, player: player)
     }
 
     func setPlayerVolume(nodeId: String, volume: Double) throws {
         let player = try getPlayer(nodeId)
         player.volume = AUValue(volume)
+        logVerbose("AudioPlayer \(nodeId) volume = \(volume)")
     }
 
     func setPlayerIsLooping(nodeId: String, isLooping: Bool) throws {
         let player = try getPlayer(nodeId)
         player.isLooping = isLooping
+        logVerbose("AudioPlayer \(nodeId) isLooping = \(isLooping)")
     }
 
     func setPlayerIsReversed(nodeId: String, isReversed: Bool) throws {
         let player = try getPlayer(nodeId)
         player.isReversed = isReversed
+        logVerbose("AudioPlayer \(nodeId) isReversed = \(isReversed)")
     }
 
     func getPlayerState(nodeId: String, completion: @escaping (Result<PlatformPlaybackState, any Error>) -> Void) {
@@ -297,6 +336,7 @@ class AudioKitBridge: AudioKitHostApi {
         let mixer = Mixer(inputs, name: name ?? "(unset)")
         mixer.volume = AUValue(volume)
         nodes[nodeId] = mixer
+        logInfo("Mixer created: \(nodeId) (inputs=\(inputNodeIds.count), name=\(name ?? "(unset)"))")
         return PlatformNodeHandle(nodeId: nodeId, nodeType: "Mixer")
     }
 
@@ -304,27 +344,32 @@ class AudioKitBridge: AudioKitHostApi {
         let mixer = try getMixer(mixerId)
         let node = try getNode(nodeId)
         mixer.addInput(node)
+        logVerbose("Mixer \(mixerId) addInput: \(nodeId)")
     }
 
     func mixerRemoveInput(mixerId: String, nodeId: String) throws {
         let mixer = try getMixer(mixerId)
         let node = try getNode(nodeId)
         mixer.removeInput(node)
+        logVerbose("Mixer \(mixerId) removeInput: \(nodeId)")
     }
 
     func mixerRemoveAllInputs(mixerId: String) throws {
         let mixer = try getMixer(mixerId)
         mixer.removeAllInputs()
+        logVerbose("Mixer \(mixerId) removeAllInputs")
     }
 
     func setMixerVolume(mixerId: String, volume: Double) throws {
         let mixer = try getMixer(mixerId)
         mixer.volume = AUValue(volume)
+        logVerbose("Mixer \(mixerId) volume = \(volume)")
     }
 
     func setMixerPan(mixerId: String, pan: Double) throws {
         let mixer = try getMixer(mixerId)
         mixer.pan = AUValue(pan)
+        logVerbose("Mixer \(mixerId) pan = \(pan)")
     }
 
     func setMixerName(mixerId: String, name: String) throws {
@@ -377,16 +422,19 @@ class AudioKitBridge: AudioKitHostApi {
     func startNode(nodeId: String) throws {
         let node = try getNode(nodeId)
         node.start()
+        logVerbose("Node \(nodeId) started")
     }
 
     func stopNode(nodeId: String) throws {
         let node = try getNode(nodeId)
         node.stop()
+        logVerbose("Node \(nodeId) stopped")
     }
 
     func bypassNode(nodeId: String) throws {
         let node = try getNode(nodeId)
         node.bypass()
+        logVerbose("Node \(nodeId) bypassed")
     }
 
     func disposeNode(nodeId: String) throws {
@@ -395,6 +443,7 @@ class AudioKitBridge: AudioKitHostApi {
         amplitudeTaps.removeValue(forKey: nodeId)?.stop()
         pitchTaps.removeValue(forKey: nodeId)?.stop()
         nodes.removeValue(forKey: nodeId)
+        logInfo("Node disposed: \(nodeId)")
     }
 
     func isNodeStarted(nodeId: String) throws -> Bool {
@@ -417,6 +466,7 @@ class AudioKitBridge: AudioKitHostApi {
     }
 
     func setNodeParameter(nodeId: String, identifier: String, value: Double) throws {
+        logVerbose("Node \(nodeId) setParam \(identifier) = \(value)")
         let node = try getNode(nodeId)
         for param in node.parameters {
             if param.def.identifier == identifier {
@@ -459,6 +509,7 @@ class AudioKitBridge: AudioKitHostApi {
     }
 
     func rampNodeParameter(nodeId: String, identifier: String, value: Double, duration: Double, delay: Double) throws {
+        logVerbose("Node \(nodeId) ramp \(identifier) -> \(value) over \(duration)s")
         let node = try getNode(nodeId)
         for param in node.parameters {
             if param.def.identifier == identifier {
@@ -508,6 +559,7 @@ class AudioKitBridge: AudioKitHostApi {
             amplitude: AUValue(amplitude)
         )
         nodes[nodeId] = osc
+        logInfo("Oscillator created: \(nodeId) (freq=\(frequency), amp=\(amplitude))")
         return PlatformNodeHandle(nodeId: nodeId, nodeType: "Oscillator")
     }
 
@@ -796,6 +848,7 @@ class AudioKitBridge: AudioKitHostApi {
         }
 
         nodes[nodeId] = node
+        logInfo("\(effectType) created: \(nodeId) (input=\(inputNodeId), params=\(params))")
         return PlatformNodeHandle(nodeId: nodeId, nodeType: effectType)
     }
 
@@ -829,6 +882,7 @@ class AudioKitBridge: AudioKitHostApi {
 
     func startAmplitudeTap(nodeId: String, bufferSize: Int64) throws {
         let node = try getNode(nodeId)
+        logVerbose("AmplitudeTap start on node \(nodeId) (bufferSize=\(bufferSize))")
         let tap = AmplitudeTap(node, bufferSize: UInt32(bufferSize)) { [weak self] amplitude in
             guard let self = self, let tap = self.amplitudeTaps[nodeId] else { return }
             let data = PlatformAudioLevelData(
@@ -846,6 +900,7 @@ class AudioKitBridge: AudioKitHostApi {
     func stopAmplitudeTap(nodeId: String) throws {
         if let tap = amplitudeTaps.removeValue(forKey: nodeId) {
             tap.stop()
+            logVerbose("AmplitudeTap stopped on node \(nodeId)")
         }
     }
 
@@ -853,6 +908,7 @@ class AudioKitBridge: AudioKitHostApi {
 
     func startPitchTap(nodeId: String, bufferSize: Int64) throws {
         let node = try getNode(nodeId)
+        logVerbose("PitchTap start on node \(nodeId) (bufferSize=\(bufferSize))")
         let tap = PitchTap(node, bufferSize: UInt32(bufferSize)) { [weak self] pitches, amplitudes in
             guard let self = self else { return }
             // M-2: Guard against empty arrays from abnormal audio formats
@@ -873,6 +929,7 @@ class AudioKitBridge: AudioKitHostApi {
     func stopPitchTap(nodeId: String) throws {
         if let tap = pitchTaps.removeValue(forKey: nodeId) {
             tap.stop()
+            logVerbose("PitchTap stopped on node \(nodeId)")
         }
     }
 
@@ -886,5 +943,12 @@ class AudioKitBridge: AudioKitHostApi {
         if let length = Settings.BufferLength(rawValue: Int(bufferLengthPower)) {
             Settings.bufferLength = length
         }
+    }
+
+    // MARK: - Logging
+
+    func setLogLevel(level: Int64) throws {
+        AudioKitBridge.logLevel = Int(level)
+        logInfo("Log level set to \(level)")
     }
 }

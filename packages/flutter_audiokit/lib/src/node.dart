@@ -1,5 +1,6 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node_parameter.dart';
 
 /// Base class for all AudioKit nodes.
@@ -29,18 +30,21 @@ abstract class Node {
   /// Mirrors `node.start()`.
   Future<void> start() {
     _throwIfDisposed();
+    AudioKitLogger.verbose('$nodeType($nodeId) start');
     return _platform.startNode(nodeId);
   }
 
   /// Mirrors `node.stop()`.
   Future<void> stop() {
     _throwIfDisposed();
+    AudioKitLogger.verbose('$nodeType($nodeId) stop');
     return _platform.stopNode(nodeId);
   }
 
   /// Mirrors `node.bypass()`.
   Future<void> bypass() {
     _throwIfDisposed();
+    AudioKitLogger.verbose('$nodeType($nodeId) bypass');
     return _platform.bypassNode(nodeId);
   }
 
@@ -68,8 +72,10 @@ abstract class Node {
   }
 
   /// Releases native resources associated with this node.
-  Future<void> dispose() =>
-      _platform.disposeNode(nodeId);
+  Future<void> dispose() {
+    AudioKitLogger.info('$nodeType($nodeId) disposing');
+    return _platform.disposeNode(nodeId);
+  }
 
   FlutterAudioKitPlatform get _platform =>
       FlutterAudioKitPlatform.instance;

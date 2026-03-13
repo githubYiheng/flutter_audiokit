@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// Audio file player node.
@@ -47,6 +48,7 @@ class AudioPlayer extends Node {
   static Future<AudioPlayer> create() async {
     final nodeId =
         await FlutterAudioKitPlatform.instance.createAudioPlayer();
+    AudioKitLogger.info('AudioPlayer created: $nodeId');
     final player = AudioPlayer._(nodeId);
     player._listenToStateChanges();
     return player;
@@ -67,6 +69,7 @@ class AudioPlayer extends Node {
   set volume(double value) {
     _throwIfDisposed();
     _volume = value.clamp(0.0, 1.0);
+    AudioKitLogger.verbose('AudioPlayer($_nodeId) volume = $_volume');
     FlutterAudioKitPlatform.instance.setPlayerVolume(_nodeId, _volume);
   }
 
@@ -123,9 +126,11 @@ class AudioPlayer extends Node {
   /// Mirrors `player.load(url:)`. Returns metadata about the loaded file.
   Future<AudioFileInfo> load({required String url}) async {
     _throwIfDisposed();
+    AudioKitLogger.info('AudioPlayer($_nodeId) loading: $url');
     final info =
         await FlutterAudioKitPlatform.instance.loadAudioFile(_nodeId, url);
     _duration = info.duration;
+    AudioKitLogger.info('AudioPlayer($_nodeId) loaded (duration=${info.duration}s)');
     return info;
   }
 
@@ -134,6 +139,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.play(from:to:)`.
   Future<void> play({double? from, double? to}) {
     _throwIfDisposed();
+    AudioKitLogger.info('AudioPlayer($_nodeId) play(from=$from, to=$to)');
     return FlutterAudioKitPlatform.instance.playerPlay(
       _nodeId,
       startTime: from,
@@ -146,6 +152,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.pause()`.
   Future<void> pause() {
     _throwIfDisposed();
+    AudioKitLogger.info('AudioPlayer($_nodeId) pause');
     return FlutterAudioKitPlatform.instance.playerPause(_nodeId);
   }
 
@@ -154,6 +161,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.resume()`.
   Future<void> resume() {
     _throwIfDisposed();
+    AudioKitLogger.info('AudioPlayer($_nodeId) resume');
     return FlutterAudioKitPlatform.instance.playerResume(_nodeId);
   }
 
@@ -164,6 +172,7 @@ class AudioPlayer extends Node {
   @override
   Future<void> stop() {
     _throwIfDisposed();
+    AudioKitLogger.info('AudioPlayer($_nodeId) stop');
     return FlutterAudioKitPlatform.instance.playerStop(_nodeId);
   }
 
@@ -172,6 +181,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.seek(time:)`.
   Future<void> seek(double time) {
     _throwIfDisposed();
+    AudioKitLogger.verbose('AudioPlayer($_nodeId) seek to ${time}s');
     return FlutterAudioKitPlatform.instance.playerSeek(_nodeId, time);
   }
 
@@ -225,5 +235,6 @@ class AudioPlayer extends Node {
     await _stateSubscription?.cancel();
     _stateSubscription = null;
     await super.dispose();
+    AudioKitLogger.info('AudioPlayer($_nodeId) disposed');
   }
 }

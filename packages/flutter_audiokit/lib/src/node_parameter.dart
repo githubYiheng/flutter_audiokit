@@ -1,5 +1,7 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
+
 /// Runtime wrapper for an AudioKit node parameter.
 ///
 /// Mirrors AudioKit's `NodeParameter` class. Provides get/set access
@@ -44,6 +46,7 @@ class NodeParameter {
   /// Updates local cache immediately and sends to native.
   set value(double newValue) {
     _value = newValue.clamp(minValue, maxValue);
+    AudioKitLogger.verbose('NodeParameter($nodeId.$identifier) = $_value');
     FlutterAudioKitPlatform.instance
         .setNodeParameter(nodeId, identifier, _value);
   }
@@ -60,6 +63,7 @@ class NodeParameter {
     double delay = 0,
   }) {
     _value = to.clamp(minValue, maxValue);
+    AudioKitLogger.verbose('NodeParameter($nodeId.$identifier) ramp -> $_value over ${duration}s');
     return FlutterAudioKitPlatform.instance.rampNodeParameter(
       nodeId,
       identifier,

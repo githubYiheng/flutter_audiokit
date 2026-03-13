@@ -17,6 +17,8 @@ export 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_in
         ReverbPreset,
         StereoMode;
 
+export 'src/logger.dart';
+
 export 'src/audio_engine.dart';
 export 'src/audio_player.dart';
 export 'src/mixer.dart';

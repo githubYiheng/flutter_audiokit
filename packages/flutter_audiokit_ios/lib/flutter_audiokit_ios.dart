@@ -374,6 +374,10 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   @override
   Future<void> setGlobalBufferLength(BufferLength bufferLength) async =>
       _hostApi.setGlobalBufferLength(bufferLength.powerOfTwo);
+
+  @override
+  Future<void> setLogLevel(int level) async =>
+      _hostApi.setLogLevel(level);
 }
 
 /// Internal handler for Swift -> Dart callbacks via Pigeon's FlutterApi.

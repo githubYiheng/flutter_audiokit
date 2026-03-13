@@ -1,5 +1,6 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// Audio mixer node that combines multiple inputs.
@@ -44,6 +45,7 @@ class Mixer extends Node {
       volume: volume,
       name: name,
     );
+    AudioKitLogger.info('Mixer created: $nodeId (name=${name ?? "(unset)"})');
     return Mixer._(nodeId, name: name).._volume = volume;
   }
 
@@ -60,6 +62,7 @@ class Mixer extends Node {
       volume: volume,
       name: name,
     );
+    AudioKitLogger.info('Mixer created: $nodeId (inputs=${inputs.length}, name=${name ?? "(unset)"})');
     return Mixer._(nodeId, name: name)
       .._volume = volume
       .._inputs.addAll(inputs);
@@ -73,6 +76,7 @@ class Mixer extends Node {
   double get volume => _volume;
   set volume(double value) {
     _volume = value;
+    AudioKitLogger.verbose('Mixer($_nodeId) volume = $value');
     FlutterAudioKitPlatform.instance.setMixerVolume(_nodeId, value);
   }
 
@@ -105,6 +109,7 @@ class Mixer extends Node {
   Future<void> addInput(Node node) async {
     if (_inputs.contains(node)) return;
     _inputs.add(node);
+    AudioKitLogger.verbose('Mixer($_nodeId) addInput: ${node.nodeType}(${node.nodeId})');
     await FlutterAudioKitPlatform.instance
         .mixerAddInput(_nodeId, node.nodeId);
   }
@@ -113,6 +118,7 @@ class Mixer extends Node {
   ///
   /// Mirrors `mixer.removeInput(node)`.
   Future<void> removeInput(Node node) async {
+    AudioKitLogger.verbose('Mixer($_nodeId) removeInput: ${node.nodeType}(${node.nodeId})');
     await FlutterAudioKitPlatform.instance
         .mixerRemoveInput(_nodeId, node.nodeId);
     _inputs.remove(node);

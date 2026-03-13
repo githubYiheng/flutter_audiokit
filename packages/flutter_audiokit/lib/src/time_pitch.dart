@@ -1,5 +1,6 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// Time-stretch and pitch-shift effect node.
@@ -56,6 +57,7 @@ class TimePitch extends Node {
       pitch: pitch,
       overlap: overlap,
     );
+    AudioKitLogger.info('TimePitch created: $nodeId (rate=$rate, pitch=$pitch)');
     return TimePitch._(nodeId, input)
       .._rate = rate
       .._pitch = pitch
@@ -68,6 +70,7 @@ class TimePitch extends Node {
   double get rate => _rate;
   set rate(double value) {
     _rate = value.clamp(0.03125, 32.0);
+    AudioKitLogger.verbose('TimePitch($_nodeId) rate = $_rate');
     FlutterAudioKitPlatform.instance.setTimePitchRate(_nodeId, _rate);
   }
 
@@ -77,6 +80,7 @@ class TimePitch extends Node {
   double get pitch => _pitch;
   set pitch(double value) {
     _pitch = value.clamp(-2400.0, 2400.0);
+    AudioKitLogger.verbose('TimePitch($_nodeId) pitch = $_pitch');
     FlutterAudioKitPlatform.instance.setTimePitchPitch(_nodeId, _pitch);
   }
 

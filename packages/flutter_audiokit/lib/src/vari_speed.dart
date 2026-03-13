@@ -1,5 +1,6 @@
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// Variable-speed playback node.
@@ -45,6 +46,7 @@ class VariSpeed extends Node {
       input.nodeId,
       rate: rate,
     );
+    AudioKitLogger.info('VariSpeed created: $nodeId (rate=$rate)');
     return VariSpeed._(nodeId, input).._rate = rate;
   }
 
@@ -54,6 +56,7 @@ class VariSpeed extends Node {
   double get rate => _rate;
   set rate(double value) {
     _rate = value.clamp(0.25, 4.0);
+    AudioKitLogger.verbose('VariSpeed($_nodeId) rate = $_rate');
     FlutterAudioKitPlatform.instance.setVariSpeedRate(_nodeId, _rate);
   }
 

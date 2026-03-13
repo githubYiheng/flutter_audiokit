@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart';
 
+import 'logger.dart';
 import 'node.dart';
 
 /// The main audio engine that manages the audio graph.
@@ -39,6 +40,7 @@ class AudioEngine {
   /// Mirrors `let engine = AudioEngine()`.
   static Future<AudioEngine> create() async {
     final engineId = await FlutterAudioKitPlatform.instance.createEngine();
+    AudioKitLogger.info('AudioEngine created: $engineId');
     return AudioEngine._(engineId);
   }
 
@@ -51,6 +53,7 @@ class AudioEngine {
     await FlutterAudioKitPlatform.instance
         .setEngineOutput(_engineId, node.nodeId);
     _output = node;
+    AudioKitLogger.info('AudioEngine($_engineId) output = ${node.nodeType}(${node.nodeId})');
   }
 
   /// Starts the audio engine.
@@ -60,6 +63,7 @@ class AudioEngine {
     _throwIfDisposed();
     await FlutterAudioKitPlatform.instance.startEngine(_engineId);
     _isRunning = true;
+    AudioKitLogger.info('AudioEngine($_engineId) started');
   }
 
   /// Stops the audio engine.
@@ -69,6 +73,7 @@ class AudioEngine {
     _throwIfDisposed();
     await FlutterAudioKitPlatform.instance.stopEngine(_engineId);
     _isRunning = false;
+    AudioKitLogger.info('AudioEngine($_engineId) stopped');
   }
 
   /// Pauses the audio engine.
@@ -87,6 +92,7 @@ class AudioEngine {
     _isRunning = false;
     _output = null;
     await FlutterAudioKitPlatform.instance.disposeEngine(_engineId);
+    AudioKitLogger.info('AudioEngine($_engineId) disposed');
   }
 
   void _throwIfDisposed() {

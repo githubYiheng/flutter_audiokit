@@ -172,6 +172,8 @@ class MockFlutterAudioKitPlatform extends FlutterAudioKitPlatform
   Future<void> setGlobalSampleRate(double sampleRate) async {}
   @override
   Future<void> setGlobalBufferLength(BufferLength bufferLength) async {}
+  @override
+  Future<void> setLogLevel(int level) async {}
 
   void dispose() {
     _playbackStateController.close();
