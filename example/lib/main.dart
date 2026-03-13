@@ -88,7 +88,6 @@ class _PlayerPageState extends State<_PlayerPage>
 
   StreamSubscription<PlaybackState>? _stateSub;
   StreamSubscription<AudioLevelData>? _ampSub;
-  StreamSubscription<AudioKitError>? _errorSub;
 
   @override
   bool get wantKeepAlive => true;
@@ -102,7 +101,6 @@ class _PlayerPageState extends State<_PlayerPage>
   Future<void> _cleanup() async {
     await _stateSub?.cancel();
     await _ampSub?.cancel();
-    await _errorSub?.cancel();
     await _player?.dispose();
     await _reverb?.dispose();
     await _mixer?.dispose();
@@ -141,10 +139,6 @@ class _PlayerPageState extends State<_PlayerPage>
           _leftAmplitude = data.leftAmplitude;
           _rightAmplitude = data.rightAmplitude;
         });
-      });
-
-      _errorSub = FlutterAudioKitPlatform.instance.onError.listen((err) {
-        _addLog('ERROR [${err.code}]: ${err.message}');
       });
 
       setState(() {

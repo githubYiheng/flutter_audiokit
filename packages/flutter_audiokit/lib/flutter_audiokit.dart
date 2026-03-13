@@ -7,13 +7,9 @@ library flutter_audiokit;
 export 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_interface.dart'
     show
         AudioFileInfo,
-        AudioKitError,
         AudioLevelData,
         AnalysisMode,
         BufferLength,
-        ConnectStrategy,
-        DisconnectStrategy,
-        FlutterAudioKitPlatform,
         NodeParameterInfo,
         PitchData,
         PlaybackState,

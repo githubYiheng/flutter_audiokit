@@ -149,26 +149,6 @@ void main() {
     });
   });
 
-  group('ConnectStrategy', () {
-    test('has complete and incremental', () {
-      expect(ConnectStrategy.values, hasLength(2));
-      expect(
-          ConnectStrategy.values,
-          containsAll(
-              [ConnectStrategy.complete, ConnectStrategy.incremental]));
-    });
-  });
-
-  group('DisconnectStrategy', () {
-    test('has recursive and detach', () {
-      expect(DisconnectStrategy.values, hasLength(2));
-      expect(
-          DisconnectStrategy.values,
-          containsAll(
-              [DisconnectStrategy.recursive, DisconnectStrategy.detach]));
-    });
-  });
-
   // ===========================================================================
   // BufferLength
   // ===========================================================================
@@ -279,37 +259,4 @@ void main() {
     });
   });
 
-  // ===========================================================================
-  // AudioKitError
-  // ===========================================================================
-  group('AudioKitError', () {
-    test('stores all fields', () {
-      const error = AudioKitError(
-        code: 'ENGINE_START_FAILED',
-        message: 'Failed to start engine',
-        nodeId: 'engine-1',
-      );
-      expect(error.code, 'ENGINE_START_FAILED');
-      expect(error.message, 'Failed to start engine');
-      expect(error.nodeId, 'engine-1');
-    });
-
-    test('nodeId is optional', () {
-      const error = AudioKitError(
-        code: 'UNKNOWN',
-        message: 'Something went wrong',
-      );
-      expect(error.nodeId, isNull);
-    });
-
-    test('implements Exception', () {
-      const error = AudioKitError(code: 'E', message: 'msg');
-      expect(error, isA<Exception>());
-    });
-
-    test('toString includes code and message', () {
-      const error = AudioKitError(code: 'E001', message: 'test error');
-      expect(error.toString(), 'AudioKitError(E001): test error');
-    });
-  });
 }

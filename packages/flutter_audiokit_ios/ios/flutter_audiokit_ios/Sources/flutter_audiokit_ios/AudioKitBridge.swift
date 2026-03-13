@@ -158,6 +158,17 @@ class AudioKitBridge: AudioKitHostApi {
         if let engine = engines.removeValue(forKey: engineId) {
             engine.stop()
         }
+        // H-3: When no engines remain, clean up all nodes, taps, and timers
+        // to prevent native resource leaks.
+        if engines.isEmpty {
+            for (_, timer) in progressTimers { timer.invalidate() }
+            progressTimers.removeAll()
+            for (_, tap) in amplitudeTaps { tap.stop() }
+            amplitudeTaps.removeAll()
+            for (_, tap) in pitchTaps { tap.stop() }
+            pitchTaps.removeAll()
+            nodes.removeAll()
+        }
     }
 
     // MARK: - AudioPlayer

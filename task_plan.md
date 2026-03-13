@@ -96,15 +96,16 @@
 
 ---
 
-#### Batch 6: API 设计优化 (LOW, 可推迟)
-**文件：** 多个
+#### Batch 6: 剩余确认问题 [status: complete]
+**文件：** `AudioKitBridge.swift`, `flutter_audiokit.dart`, `audio_player.dart`, `platform_interface.dart`, `flutter_audiokit_ios.dart`, `types.dart`, tests, example
 **工作量：** 中
 
 | Issue | 修复内容 |
 |-------|---------|
-| L-1 | 在 app-facing 层提供 onError 便捷 API，移除 FlutterAudioKitPlatform 的 barrel export |
-| L-3 | 要么在 Swift 层实现 onError 调用，要么从 API 中移除 |
-| L-5 | 要么实现 editStartTime/editEndTime setter + platform API，要么移除 getter |
+| H-3 | `disposeEngine` 当无 engine 时级联清理所有 nodes/taps/timers |
+| L-1 | 移除 `FlutterAudioKitPlatform`、`ConnectStrategy`、`DisconnectStrategy` 的 barrel export |
+| L-3 | 移除空壳 `onError` 流 + `AudioKitError` 类（Pigeon handler 保留 no-op） |
+| L-5 | 移除 `editStartTime`/`editEndTime`/`isEditTimeEnabled` 死 getter |
 
 ---
 
@@ -114,8 +115,10 @@
 | 按文件关联性分批 | 减少 commit 数量，同文件修改合并 |
 | M-5 仍建议修复 | 虽然报告描述不完全准确，但 volume clamp 是好实践 |
 | H-2 建议先移除 strategy | iOS 不支持，保留会误导用户 |
-| H-6 推荐 @MainActor | 比 DispatchQueue.main.async 更现代且编译器强制 |
-| Batch 6 标记可推迟 | L-1/L-3/L-5 涉及 API 设计决策，需要权衡 |
+| H-3 采用"无 engine 时全清理"策略 | 避免引入 engine→nodes 映射的复杂度，覆盖 99% 单 engine 场景 |
+| H-6/M-9 不修 | H-6: platform channels 已在主线程；M-9: 同一音频线程不竞争 |
+| L-3 选择移除而非实现 | Swift 层错误已通过 PigeonError 返回，onError 流是多余的 |
+| L-5 选择移除而非实现 setter | editTime 功能不在当前 MVP 范围 |
 
 ## Errors Encountered
 | Error | Resolution |

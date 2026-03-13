@@ -20,7 +20,7 @@
 
 | ID | 问题 | 状态 | 备注 |
 |----|------|------|------|
-| H-1 | 直接依赖 flutter_audiokit_ios | ✅ 确认 | pubspec.yaml dependencies 中有 flutter_audiokit_ios: ^0.1.0 |
+| H-1 | 直接依赖 flutter_audiokit_ios | ❌ 误报 | Flutter Federated Plugin 的 default_package 机制要求 app-facing 包显式依赖实现包，移除会导致插件无法加载 |
 | H-2 | ConnectStrategy/DisconnectStrategy 被丢弃 | ✅ 确认 | iOS impl 接收参数但不传给 Pigeon/Swift |
 | H-3 | disposeEngine 不清理 nodes | ✅ 确认 | 只 engine.stop()，不清理 nodes/taps/timers |
 | H-4 | Mixer.isStarted 和 VariSpeed.isStarted 语义错误 | ✅ 确认 | Mixer 用 volume!=0，VariSpeed 用 rate!=1.0，应该用状态标记 |

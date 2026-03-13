@@ -30,7 +30,6 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   final _playbackStateController = StreamController<PlaybackState>.broadcast();
   final _playbackCompletedController = StreamController<String>.broadcast();
   final _amplitudeController = StreamController<AudioLevelData>.broadcast();
-  final _errorController = StreamController<AudioKitError>.broadcast();
   final _pitchController = StreamController<PitchData>.broadcast();
 
   /// Registers this class as the platform implementation.
@@ -64,11 +63,8 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
         ));
       },
       onErrorCallback: (nodeId, code, message) {
-        _errorController.add(AudioKitError(
-          nodeId: nodeId,
-          code: code,
-          message: message,
-        ));
+        // onError Pigeon channel exists but is not triggered from Swift.
+        // Kept as no-op for Pigeon interface compliance.
       },
       onPitch: (data) {
         _pitchController.add(PitchData(
@@ -365,9 +361,6 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
 
   @override
   Stream<AudioLevelData> get onAmplitudeData => _amplitudeController.stream;
-
-  @override
-  Stream<AudioKitError> get onError => _errorController.stream;
 
   @override
   Stream<PitchData> get onPitchData => _pitchController.stream;

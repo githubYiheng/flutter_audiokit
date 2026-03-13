@@ -73,12 +73,6 @@ enum AnalysisMode { rms, peak }
 /// Mirrors AudioKit's StereoMode enum.
 enum StereoMode { left, right, center }
 
-/// Mirrors AudioKit's ConnectStrategy enum.
-enum ConnectStrategy { complete, incremental }
-
-/// Mirrors AudioKit's DisconnectStrategy enum.
-enum DisconnectStrategy { recursive, detach }
-
 /// Mirrors AudioKit's Settings.BufferLength enum.
 enum BufferLength {
   shortest(5),
@@ -153,18 +147,3 @@ class PitchData {
   final double rightAmplitude;
 }
 
-/// Error from the AudioKit native layer.
-class AudioKitError implements Exception {
-  const AudioKitError({
-    required this.code,
-    required this.message,
-    this.nodeId,
-  });
-
-  final String code;
-  final String message;
-  final String? nodeId;
-
-  @override
-  String toString() => 'AudioKitError($code): $message';
-}

@@ -362,11 +362,6 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
     throw UnimplementedError('onAmplitudeData not implemented.');
   }
 
-  /// Stream of errors from the native layer.
-  Stream<AudioKitError> get onError {
-    throw UnimplementedError('onError not implemented.');
-  }
-
   /// Stream of pitch data from active PitchTaps.
   Stream<PitchData> get onPitchData {
     throw UnimplementedError('onPitchData not implemented.');

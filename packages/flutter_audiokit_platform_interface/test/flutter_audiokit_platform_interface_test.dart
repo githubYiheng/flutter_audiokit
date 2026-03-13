@@ -154,7 +154,6 @@ class MockFlutterAudioKitPlatform extends FlutterAudioKitPlatform
   final _playbackStateController = StreamController<PlaybackState>.broadcast();
   final _playbackCompletedController = StreamController<String>.broadcast();
   final _amplitudeController = StreamController<AudioLevelData>.broadcast();
-  final _errorController = StreamController<AudioKitError>.broadcast();
   final _pitchController = StreamController<PitchData>.broadcast();
 
   @override
@@ -165,8 +164,6 @@ class MockFlutterAudioKitPlatform extends FlutterAudioKitPlatform
       _playbackCompletedController.stream;
   @override
   Stream<AudioLevelData> get onAmplitudeData => _amplitudeController.stream;
-  @override
-  Stream<AudioKitError> get onError => _errorController.stream;
   @override
   Stream<PitchData> get onPitchData => _pitchController.stream;
 
@@ -180,7 +177,6 @@ class MockFlutterAudioKitPlatform extends FlutterAudioKitPlatform
     _playbackStateController.close();
     _playbackCompletedController.close();
     _amplitudeController.close();
-    _errorController.close();
     _pitchController.close();
   }
 }
@@ -411,9 +407,6 @@ void main() {
     test('onAmplitudeData', () {
       expect(() => platform.onAmplitudeData, throwsUnimplementedError);
     });
-    test('onError', () {
-      expect(() => platform.onError, throwsUnimplementedError);
-    });
     test('onPitchData', () {
       expect(() => platform.onPitchData, throwsUnimplementedError);
     });
@@ -499,9 +492,6 @@ void main() {
     });
     test('onAmplitudeData is a stream', () {
       expect(mock.onAmplitudeData, isA<Stream<AudioLevelData>>());
-    });
-    test('onError is a stream', () {
-      expect(mock.onError, isA<Stream<AudioKitError>>());
     });
     test('onPitchData is a stream', () {
       expect(mock.onPitchData, isA<Stream<PitchData>>());

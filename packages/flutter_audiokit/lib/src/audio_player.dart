@@ -24,9 +24,6 @@ class AudioPlayer extends Node {
   double _volume = 1.0;
   bool _isLooping = false;
   bool _isReversed = false;
-  bool _isEditTimeEnabled = false;
-  double _editStartTime = 0;
-  double _editEndTime = 0;
   PlaybackStatus _status = PlaybackStatus.stopped;
   double _duration = 0;
   double _currentTime = 0;
@@ -118,23 +115,6 @@ class AudioPlayer extends Node {
   /// Mirrors `player.currentPosition`.
   double get currentPosition =>
       _duration > 0 ? (_currentTime / _duration).clamp(0.0, 1.0) : 0.0;
-
-  // ---- Edit Time (mirrors player.editStartTime / editEndTime) ----
-
-  /// Whether edit time is enabled.
-  ///
-  /// Mirrors `player.isEditTimeEnabled`.
-  bool get isEditTimeEnabled => _isEditTimeEnabled;
-
-  /// Edit region start time in seconds.
-  ///
-  /// Mirrors `player.editStartTime`.
-  double get editStartTime => _editStartTime;
-
-  /// Edit region end time in seconds.
-  ///
-  /// Mirrors `player.editEndTime`.
-  double get editEndTime => _editEndTime;
 
   // ---- Methods ----
 

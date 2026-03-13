@@ -43,17 +43,19 @@
 - L-7: comb_filter_reverb / flat_frequency_response_reverb 存储 loopDuration 字段
 - M-4: flutter_audiokit_ios.dart 两处 PlaybackStatus 添加边界检查
 
-### 验证结果
-- `dart analyze` 3 个包: 0 errors, 9 info (全部预存)
-- `flutter test` platform_interface: 106 tests all pass
-- `dart analyze` example: 1 pre-existing warning
+#### Batch 6: 剩余确认问题修复 ✅
+- H-3: AudioKitBridge.swift `disposeEngine` — 当无 engine 时级联清理所有 nodes/taps/timers
+- L-1: flutter_audiokit.dart 移除 `FlutterAudioKitPlatform`、`ConnectStrategy`、`DisconnectStrategy` 的 barrel export
+- L-3: 移除空壳 `onError` 流 — 删除 `AudioKitError` 类、platform_interface 的 `onError` 方法、iOS impl 的 `_errorController`、example app 的 `_errorSub`；Pigeon handler 保留为 no-op
+- L-5: audio_player.dart 移除 `editStartTime`/`editEndTime`/`isEditTimeEnabled` 死 getter 和 backing fields
+- 附带清理: 移除 H-2 遗留的 `ConnectStrategy`/`DisconnectStrategy` 枚举定义及测试
 
-### 未修复（推迟）
+### 验证结果（最终）
+- `dart analyze` 3 个包: 0 errors, 6 info (全部预存)
+- `flutter test` platform_interface: 98 tests all pass（移除 8 个已删除 API 的测试）
+
+### 未修复（不修）
 | Issue | 原因 |
 |-------|------|
-| H-3 | disposeEngine 清理 nodes 需要 engine→nodes 映射，涉及架构设计 |
-| H-6 | Flutter platform channels 已在主线程调度，实际风险低 |
-| M-9 | AmplitudeTap 数据竞争需要线程同步设计 |
-| L-1 | FlutterAudioKitPlatform 导出涉及 onError API 重新设计 |
-| L-3 | onError 流是否实现涉及错误处理策略决策 |
-| L-5 | editStartTime 等是否需要 setter 涉及 API 范围决策 |
+| H-6 | Flutter platform channels 已在主线程调度，加 @MainActor 可能引入 tap 回调 deadlock |
+| M-9 | AudioKit tap 回调和属性更新在同一音频线程，不是真正 race |
