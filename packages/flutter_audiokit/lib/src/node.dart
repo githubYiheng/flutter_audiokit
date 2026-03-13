@@ -19,22 +19,36 @@ abstract class Node {
   /// Mirrors `node.isStarted`.
   bool get isStarted;
 
+  /// Throws [StateError] if this node has been disposed.
+  void _throwIfDisposed() {
+    if (isDisposed) {
+      throw StateError('$nodeType($nodeId) has been disposed.');
+    }
+  }
+
   /// Mirrors `node.start()`.
-  Future<void> start() =>
-      _platform.startNode(nodeId);
+  Future<void> start() {
+    _throwIfDisposed();
+    return _platform.startNode(nodeId);
+  }
 
   /// Mirrors `node.stop()`.
-  Future<void> stop() =>
-      _platform.stopNode(nodeId);
+  Future<void> stop() {
+    _throwIfDisposed();
+    return _platform.stopNode(nodeId);
+  }
 
   /// Mirrors `node.bypass()`.
-  Future<void> bypass() =>
-      _platform.bypassNode(nodeId);
+  Future<void> bypass() {
+    _throwIfDisposed();
+    return _platform.bypassNode(nodeId);
+  }
 
   /// Retrieves all adjustable parameters of this node.
   ///
   /// Mirrors `node.parameters`.
   Future<List<NodeParameter>> getParameters() async {
+    _throwIfDisposed();
     final infos = await _platform.getNodeParameters(nodeId);
     return infos
         .map((info) => NodeParameter(nodeId: nodeId, info: info))
@@ -45,6 +59,7 @@ abstract class Node {
   ///
   /// Mirrors accessing `node.$paramName`.
   Future<NodeParameter?> parameter(String identifier) async {
+    _throwIfDisposed();
     final params = await getParameters();
     for (final p in params) {
       if (p.identifier == identifier) return p;

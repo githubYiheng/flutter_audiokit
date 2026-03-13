@@ -149,20 +149,12 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   }
 
   /// Mirrors `mixer.addInput(node)`.
-  Future<void> mixerAddInput(
-    String mixerId,
-    String nodeId, {
-    ConnectStrategy strategy = ConnectStrategy.complete,
-  }) {
+  Future<void> mixerAddInput(String mixerId, String nodeId) {
     throw UnimplementedError('mixerAddInput() not implemented.');
   }
 
   /// Mirrors `mixer.removeInput(node)`.
-  Future<void> mixerRemoveInput(
-    String mixerId,
-    String nodeId, {
-    DisconnectStrategy strategy = DisconnectStrategy.recursive,
-  }) {
+  Future<void> mixerRemoveInput(String mixerId, String nodeId) {
     throw UnimplementedError('mixerRemoveInput() not implemented.');
   }
 
@@ -289,6 +281,16 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   /// [effectType] matches the AudioKit class name (e.g., 'ZitaReverb',
   /// 'MoogLadder').
   /// [params] is a map of parameter identifier to value.
+  ///
+  /// Returns the node ID.
+  Future<String> createEffect(
+    String inputNodeId,
+    String effectType,
+    Map<String, double> params,
+  ) {
+    throw UnimplementedError('createEffect() not implemented.');
+  }
+
   /// Creates an Oscillator (sine wave generator).
   ///
   /// Returns the node ID.
@@ -297,14 +299,6 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
     double amplitude = 1.0,
   }) {
     throw UnimplementedError('createOscillator() not implemented.');
-  }
-
-  Future<String> createEffect(
-    String inputNodeId,
-    String effectType,
-    Map<String, double> params,
-  ) {
-    throw UnimplementedError('createEffect() not implemented.');
   }
 
   /// Loads a factory preset on a Reverb node.

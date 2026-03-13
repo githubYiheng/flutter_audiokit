@@ -34,7 +34,7 @@ class Mixer extends Node {
   bool get isDisposed => _isDisposed;
 
   @override
-  bool get isStarted => _volume != 0.0;
+  bool get isStarted => true;
 
   /// Creates an empty Mixer.
   ///
@@ -102,26 +102,19 @@ class Mixer extends Node {
   /// Adds a node to this mixer's inputs.
   ///
   /// Mirrors `mixer.addInput(node)`. Can be called while the engine is running.
-  Future<void> addInput(
-    Node node, {
-    ConnectStrategy strategy = ConnectStrategy.complete,
-  }) async {
+  Future<void> addInput(Node node) async {
+    if (_inputs.contains(node)) return;
+    _inputs.add(node);
     await FlutterAudioKitPlatform.instance
-        .mixerAddInput(_nodeId, node.nodeId, strategy: strategy);
-    if (!_inputs.contains(node)) {
-      _inputs.add(node);
-    }
+        .mixerAddInput(_nodeId, node.nodeId);
   }
 
   /// Removes a node from this mixer's inputs.
   ///
   /// Mirrors `mixer.removeInput(node)`.
-  Future<void> removeInput(
-    Node node, {
-    DisconnectStrategy strategy = DisconnectStrategy.recursive,
-  }) async {
+  Future<void> removeInput(Node node) async {
     await FlutterAudioKitPlatform.instance
-        .mixerRemoveInput(_nodeId, node.nodeId, strategy: strategy);
+        .mixerRemoveInput(_nodeId, node.nodeId);
     _inputs.remove(node);
   }
 

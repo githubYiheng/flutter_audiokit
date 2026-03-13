@@ -13,6 +13,7 @@ class FlatFrequencyResponseReverb extends Node {
   bool _isDisposed = false;
 
   double _reverbDuration = 0.5;
+  double _loopDuration = 0.1;
 
   @override
   String get nodeId => _nodeId;
@@ -45,8 +46,12 @@ class FlatFrequencyResponseReverb extends Node {
       },
     );
     return FlatFrequencyResponseReverb._(nodeId, input)
-      .._reverbDuration = reverbDuration;
+      .._reverbDuration = reverbDuration
+      .._loopDuration = loopDuration;
   }
+
+  /// Loop duration set at creation (init-only, read-only).
+  double get loopDuration => _loopDuration;
 
   /// Reverb duration in seconds. 0...10, default 0.5.
   double get reverbDuration => _reverbDuration;

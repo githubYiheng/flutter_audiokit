@@ -55,15 +55,22 @@ class AudioPlayer extends Node {
     return player;
   }
 
+  void _throwIfDisposed() {
+    if (_isDisposed) {
+      throw StateError('AudioPlayer($_nodeId) has been disposed.');
+    }
+  }
+
   // ---- Properties (write-through cache) ----
 
-  /// Player volume. Default 1.0.
+  /// Player volume. 0.0...1.0, default 1.0.
   ///
   /// Mirrors `player.volume`.
   double get volume => _volume;
   set volume(double value) {
-    _volume = value;
-    FlutterAudioKitPlatform.instance.setPlayerVolume(_nodeId, value);
+    _throwIfDisposed();
+    _volume = value.clamp(0.0, 1.0);
+    FlutterAudioKitPlatform.instance.setPlayerVolume(_nodeId, _volume);
   }
 
   /// Whether playback loops. Default false.
@@ -71,6 +78,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.isLooping`.
   bool get isLooping => _isLooping;
   set isLooping(bool value) {
+    _throwIfDisposed();
     _isLooping = value;
     FlutterAudioKitPlatform.instance.setPlayerIsLooping(_nodeId, value);
   }
@@ -80,6 +88,7 @@ class AudioPlayer extends Node {
   /// Mirrors `player.isReversed`.
   bool get isReversed => _isReversed;
   set isReversed(bool value) {
+    _throwIfDisposed();
     _isReversed = value;
     FlutterAudioKitPlatform.instance.setPlayerIsReversed(_nodeId, value);
   }
@@ -133,6 +142,7 @@ class AudioPlayer extends Node {
   ///
   /// Mirrors `player.load(url:)`. Returns metadata about the loaded file.
   Future<AudioFileInfo> load({required String url}) async {
+    _throwIfDisposed();
     final info =
         await FlutterAudioKitPlatform.instance.loadAudioFile(_nodeId, url);
     _duration = info.duration;
@@ -142,38 +152,48 @@ class AudioPlayer extends Node {
   /// Starts playback, optionally from a specific time range.
   ///
   /// Mirrors `player.play(from:to:)`.
-  Future<void> play({double? from, double? to}) =>
-      FlutterAudioKitPlatform.instance.playerPlay(
-        _nodeId,
-        startTime: from,
-        endTime: to,
-      );
+  Future<void> play({double? from, double? to}) {
+    _throwIfDisposed();
+    return FlutterAudioKitPlatform.instance.playerPlay(
+      _nodeId,
+      startTime: from,
+      endTime: to,
+    );
+  }
 
   /// Pauses playback.
   ///
   /// Mirrors `player.pause()`.
-  Future<void> pause() =>
-      FlutterAudioKitPlatform.instance.playerPause(_nodeId);
+  Future<void> pause() {
+    _throwIfDisposed();
+    return FlutterAudioKitPlatform.instance.playerPause(_nodeId);
+  }
 
   /// Resumes playback after a pause.
   ///
   /// Mirrors `player.resume()`.
-  Future<void> resume() =>
-      FlutterAudioKitPlatform.instance.playerResume(_nodeId);
+  Future<void> resume() {
+    _throwIfDisposed();
+    return FlutterAudioKitPlatform.instance.playerResume(_nodeId);
+  }
 
   /// Stops playback and resets the player.
   ///
   /// Mirrors `player.stop()`. This is different from [Node.stop] which
   /// only sets the bypass flag — this actually stops the AVAudioPlayerNode.
   @override
-  Future<void> stop() =>
-      FlutterAudioKitPlatform.instance.playerStop(_nodeId);
+  Future<void> stop() {
+    _throwIfDisposed();
+    return FlutterAudioKitPlatform.instance.playerStop(_nodeId);
+  }
 
   /// Seeks to a specific time in seconds.
   ///
   /// Mirrors `player.seek(time:)`.
-  Future<void> seek(double time) =>
-      FlutterAudioKitPlatform.instance.playerSeek(_nodeId, time);
+  Future<void> seek(double time) {
+    _throwIfDisposed();
+    return FlutterAudioKitPlatform.instance.playerSeek(_nodeId, time);
+  }
 
   // ---- Streams ----
 

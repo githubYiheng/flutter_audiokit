@@ -64,11 +64,9 @@ class MockFlutterAudioKitPlatform extends FlutterAudioKitPlatform
   }) async =>
       'mock-mixer-id';
   @override
-  Future<void> mixerAddInput(String mixerId, String nodeId,
-      {ConnectStrategy strategy = ConnectStrategy.complete}) async {}
+  Future<void> mixerAddInput(String mixerId, String nodeId) async {}
   @override
-  Future<void> mixerRemoveInput(String mixerId, String nodeId,
-      {DisconnectStrategy strategy = DisconnectStrategy.recursive}) async {}
+  Future<void> mixerRemoveInput(String mixerId, String nodeId) async {}
   @override
   Future<void> mixerRemoveAllInputs(String mixerId) async {}
   @override
@@ -539,11 +537,7 @@ void main() {
 
     test('mixer operations', () async {
       await mock.mixerAddInput('m', 'n');
-      await mock.mixerAddInput('m', 'n',
-          strategy: ConnectStrategy.incremental);
       await mock.mixerRemoveInput('m', 'n');
-      await mock.mixerRemoveInput('m', 'n',
-          strategy: DisconnectStrategy.detach);
       await mock.mixerRemoveAllInputs('m');
       await mock.setMixerVolume('m', 0.5);
       await mock.setMixerPan('m', -0.5);

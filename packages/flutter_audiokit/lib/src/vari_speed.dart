@@ -30,7 +30,7 @@ class VariSpeed extends Node {
   bool get isDisposed => _isDisposed;
 
   @override
-  bool get isStarted => _rate != 1.0;
+  bool get isStarted => true;
 
   /// The input node.
   Node get input => _input;

@@ -79,7 +79,8 @@ class Oscillator extends Node {
 
   @override
   Future<void> dispose() async {
-    await super.dispose();
+    if (_isDisposed) return;
     _isDisposed = true;
+    await super.dispose();
   }
 }

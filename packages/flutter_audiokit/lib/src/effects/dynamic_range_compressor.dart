@@ -21,7 +21,7 @@ class DynamicRangeCompressor extends Node {
   double _threshold = 0.0;
   double _attackDuration = 0.1;
   double _releaseDuration = 0.1;
-  double _gain = 1.0;
+  double _gain = 0.0;
   double _dryWetMix = 1.0;
 
   @override
@@ -48,7 +48,7 @@ class DynamicRangeCompressor extends Node {
     double threshold = 0.0,
     double attackDuration = 0.1,
     double releaseDuration = 0.1,
-    double gain = 1.0,
+    double gain = 0.0,
     double dryWetMix = 1.0,
   }) async {
     final nodeId = await FlutterAudioKitPlatform.instance.createEffect(
@@ -104,7 +104,7 @@ class DynamicRangeCompressor extends Node {
         .setNodeParameter(_nodeId, 'releaseDuration', _releaseDuration);
   }
 
-  /// Makeup gain. 0...8, default 1.
+  /// Makeup gain in dB. 0...8, default 0.
   double get gain => _gain;
   set gain(double value) {
     _gain = value.clamp(0.0, 8.0);

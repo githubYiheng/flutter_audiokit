@@ -1,114 +1,123 @@
-# Task Plan — flutter_audiokit Phase 1 验证 + Phase 3 推进
+# Task Plan — Code Review 报告验证与修复规划
 
 ## Goal
-完成 Phase 1 剩余验证工作（bootstrap、pigeon codegen、example app），然后推进 Phase 3（剩余 SoundpipeAudioKit 效果器 + 高级功能）。
-
-## Current State
-- Phase 1 脚手架 ✅，AmplitudeTap 立体声 ✅，进度定时器 ✅
-- Phase 2 效果器 ✅ 全部 18 个实现
-- Phase A 验证 ✅ 全部通过（bootstrap、pigeon codegen、dart analyze、melos.yaml 清理）
-- Phase B Example App ✅ 骨架完成
-- Phase C ✅ 全部完成（33 个新效果器 + Convolution + PitchTap）
-- Phase D 未开始
+逐一验证 CODE_REVIEW_REPORT.md 中列出的所有问题是否在实际代码中存在，确认后规划修复方案。
 
 ---
 
-## Phase A — 验证基础设施 [status: complete]
+## Phase 1 — 验证所有 Issue [status: complete]
 
-### A1. melos bootstrap ✅
-### A2. Pigeon 代码生成 ✅
-### A3. Dart 静态分析 ✅
-### A4. melos.yaml 删除 ✅
+29 个问题全部验证完毕。结果：28 确认存在，1 个有争议（M-5）。
+详见 findings.md。
 
-## Phase B — Example App [status: complete]
-### B1. 创建 example app 骨架 ✅
-### B2. 实现基础集成测试页面 ✅
+---
 
-## Phase C — Phase 3 效果器 + 高级功能 [status: complete]
+## Phase 2 — 修复计划 [status: complete]
 
-### C1. 新增 SoundpipeAudioKit 效果器 (33 个) ✅
+### 修复批次规划
 
-**Reverbs (3):**
-- [x] ChowningReverb
-- [x] FlatFrequencyResponseReverb
-- [x] CombFilterReverb
+按优先级和文件关联性分批修复，每批对应一个 commit。
 
-**Delay (1):**
-- [x] VariableDelay
+---
 
-**Filters (16):**
-- [x] KorgLowPassFilter, RolandTB303Filter, DiodeLadderFilter
-- [x] LowPassButterworthFilter, HighPassButterworthFilter
-- [x] BandPassButterworthFilter, BandRejectButterworthFilter
-- [x] ThreePoleLowpassFilter, ResonantFilter
-- [x] EqualizerFilter, FormantFilter
-- [x] ToneFilter, ToneComplementFilter
-- [x] ModalResonanceFilter
-- [x] PeakingParametricEqualizerFilter, LowShelfParametricEqualizerFilter, HighShelfParametricEqualizerFilter
+#### Batch 1: Swift 层 CRITICAL 修复 (C-1, C-2, C-3, C-5)
+**文件：** `AudioKitBridge.swift`
+**工作量：** 小
 
-**Distortion (3):**
-- [x] TanhDistortion, BitCrusher, Clipper
+| Issue | 修复内容 |
+|-------|---------|
+| C-1 | `setNodeParameter` 中添加 VariableDelay/TanhDistortion/BitCrusher/Phaser 的 dryWetMix 处理 |
+| C-2 | `disposeNode` 中对 tap 调 `.stop()` — `amplitudeTaps.removeValue(forKey:)?.stop()` |
+| C-3 | `rampNodeParameter` 中添加 Reverb dryWetMix 处理（直接设值，不支持 ramp） |
+| C-5 | `playerPlay` 中将 completionHandler 赋值移到 play() 之前 |
 
-**Modulation (5):**
-- [x] Phaser, Tremolo, AutoWah, AutoPanner, Vibrato
+同时修复同文件的 MEDIUM 问题：
 
-**Spatial (1):**
-- [x] StringResonator
+| Issue | 修复内容 |
+|-------|---------|
+| M-1 | Timer 改用 `RunLoop.main.add(timer, forMode: .common)` |
+| M-2 | PitchTap 回调添加 `guard !pitches.isEmpty, !amplitudes.isEmpty` |
+| M-3 | Delay dryWetMix 默认值改为 50 |
+| M-7 | Timer 自停路径添加 sendPlayerState |
+| M-11 | DynamicRangeCompressor gain 默认值改为 0 |
 
-**Utility (3):**
-- [x] DCBlock, AmplitudeEnvelope
+---
 
-**Special (1):**
-- [x] Convolution（脉冲响应混响 — 需要 Pigeon 专用方法 createConvolution）
+#### Batch 2: Dart 层 CRITICAL + HIGH 修复
+**文件：** `oscillator.dart`, `node.dart`, `audio_player.dart`, `mixer.dart`, `vari_speed.dart`
+**工作量：** 中
 
-### C2. 高级功能 ✅
-- [x] Convolution（脉冲响应混响）— 新增 Pigeon 方法 + Swift + Dart
-- [x] PitchTap（音高检测）— 新增 Pigeon 方法 + Swift + Dart + PitchData 类型
+| Issue | 修复内容 |
+|-------|---------|
+| C-4 | `oscillator.dart` — 添加幂等守卫，调整 `_isDisposed` 顺序 |
+| H-4 | `mixer.dart` / `vari_speed.dart` — `isStarted` 改用 `_isStarted` 状态标记 |
+| H-5 | `node.dart` — 添加 `_throwIfDisposed()` 方法，在 start/stop/bypass/getParameters/parameter 中调用；`audio_player.dart` — 所有公开方法添加检查 |
+| M-5 | `audio_player.dart` — volume setter 添加 clamp(0.0, 1.0)（同时检查 Mixer.volume 是否也需要） |
+| M-6 | `variable_delay.dart` — 存储 maximumTime，clamp 使用该值 |
+| M-8 | `mixer.dart` — addInput 的去重检查移到 await 之前 |
 
-### C3. Pigeon 代码重新生成 ✅
-- [x] messages.g.dart 重新生成
-- [x] Messages.g.swift 重新生成
-- [x] dart analyze 全部 4 包 0 errors
+---
 
-## Phase D — 测试与文档 [status: complete]
-- [x] 补充 platform_interface 单元测试（106 tests all pass）
-  - platform_interface_test: 80 tests（instance管理 + 42个方法UnimplementedError + mock返回值 + void方法完成）
-  - types_test: 26 tests（6个数据类 + 8个枚举全覆盖）
-- [x] 确保所有效果器的参数范围与 AudioKit 源码一致（已验证 51 个效果器参数匹配）
+#### Batch 3: 架构 & 配置修复
+**文件：** `pubspec.yaml`, `flutter_audiokit_ios.dart`, `messages.dart`, `AudioKitBridge.swift`
+**工作量：** 中
 
-## Phase E — 项目文档 [status: complete]
-- [x] 根目录 README.md — 项目总览、安装、使用示例、架构、效果器列表、开发命令
-- [x] packages/flutter_audiokit/README.md — App-facing 包文档、API 概览、快速上手
-- [x] packages/flutter_audiokit_platform_interface/README.md — 平台接口说明、共享类型表
-- [x] packages/flutter_audiokit_ios/README.md — iOS 实现说明、Pigeon 代码生成、SPM 依赖
-- [x] example/README.md — 三个 Tab 功能介绍、运行方式、音频文件说明
-- [x] 3 个包 CHANGELOG.md — 0.1.0 初始版本记录
+| Issue | 修复内容 |
+|-------|---------|
+| H-1 | 从 flutter_audiokit/pubspec.yaml 的 dependencies 中移除 flutter_audiokit_ios |
+| H-2 | 方案选择：从 platform_interface 中移除 strategy 参数（iOS 不支持），或在 Pigeon 层实现。建议先移除，留 TODO 日后实现 |
+| H-3 | Swift `disposeEngine` 遍历 nodes 清理关联节点，或在 Dart AudioEngine.dispose() 中先清理所有 nodes |
+| M-10 | `FlutterAudioKitPlugin.swift` — bridge 存为 static 属性 |
+
+---
+
+#### Batch 4: Swift 线程安全
+**文件：** `AudioKitBridge.swift`
+**工作量：** 中
+
+| Issue | 修复内容 |
+|-------|---------|
+| H-6 | 为 AudioKitBridge 添加 `@MainActor` 标注或关键方法入口处 dispatch 到主线程 |
+| M-9 | AmplitudeTap 回调中使用闭包参数而非 tap 对象属性（如果 AudioKit API 支持） |
+
+---
+
+#### Batch 5: Dart 代码质量修复 (LOW)
+**文件：** 多个 Dart 文件
+**工作量：** 小
+
+| Issue | 修复内容 |
+|-------|---------|
+| L-2 | 修复 platform_interface.dart doc comment 错位 |
+| L-4 | 删除 _setupEventChannels() 空方法 |
+| L-6 | ReverbPreset 枚举添加注释警告 |
+| L-7 | comb_filter_reverb / flat_frequency_response_reverb 存储 loopDuration 为 final 字段 |
+| M-4 | flutter_audiokit_ios.dart 添加 statusIndex 边界检查 |
+
+---
+
+#### Batch 6: API 设计优化 (LOW, 可推迟)
+**文件：** 多个
+**工作量：** 中
+
+| Issue | 修复内容 |
+|-------|---------|
+| L-1 | 在 app-facing 层提供 onError 便捷 API，移除 FlutterAudioKitPlatform 的 barrel export |
+| L-3 | 要么在 Swift 层实现 onError 调用，要么从 API 中移除 |
+| L-5 | 要么实现 editStartTime/editEndTime setter + platform API，要么移除 getter |
 
 ---
 
 ## Decisions Log
 | Decision | Reason |
 |----------|--------|
-| 效果器使用 generic createEffect + setNodeParameter | 避免为每个效果器添加专用 Pigeon 方法，减少桥接层代码量 |
-| Reverb 特殊处理 dryWetMix | AudioKit Reverb 不使用标准 @Parameter 包装器 |
-| ZitaReverb equalizerFrequency2 fallback | AudioKit 源码 identifier 与属性名不一致 |
-| melos.yaml → pubspec.yaml melos: | Melos 7.x 要求配置在 pubspec.yaml 中 |
-| SDK >=3.5.0 | pub workspace 特性最低要求 |
-| flutter_lints ^6.0.0 统一 | workspace 要求所有包版本一致 |
-| FlutterAudioKitPlatform 加入 barrel export | example app 需要访问 onError 全局流 |
-| Convolution 单独 Pigeon 方法 | createEffect 的 params Map<String,double> 无法传递文件路径字符串 |
-| PitchTap 单独 Pigeon 方法 | 与 AmplitudeTap 一样需要专用 start/stop + 回调 |
-| dryWetMix 后设置（VariableDelay/TanhDistortion/BitCrusher/Phaser）| 这些效果器的 Swift init 不接受 dryWetMix 参数 |
-| Tremolo/AutoPanner 使用默认 waveform | Table 类型暂不桥接，使用默认 positiveSine |
+| 按文件关联性分批 | 减少 commit 数量，同文件修改合并 |
+| M-5 仍建议修复 | 虽然报告描述不完全准确，但 volume clamp 是好实践 |
+| H-2 建议先移除 strategy | iOS 不支持，保留会误导用户 |
+| H-6 推荐 @MainActor | 比 DispatchQueue.main.async 更现代且编译器强制 |
+| Batch 6 标记可推迟 | L-1/L-3/L-5 涉及 API 设计决策，需要权衡 |
 
 ## Errors Encountered
 | Error | Resolution |
 |-------|------------|
-| AVAudioUnitReverbPresetType 不存在 | 改为 AVAudioUnitReverbPreset |
-| _FlutterApiHandler.onError 无限递归 | 字段改名为 onErrorCallback |
-| ZitaReverb equalizerFrequency2 不匹配 | 添加 identifier fallback 映射 |
-| melos "not within workspace" | 创建根 pubspec.yaml + workspace 字段 + resolution: workspace |
-| SDK ^3.3.0 不支持 workspace | 升级到 ^3.5.0 |
-| melos run pigeon PATH 问题 | 直接 cd 到 ios 包运行 dart run pigeon |
-| Pigeon 生成后同步调用变 async | 5 处加 await（已修复） |
-| flutter_lints ^5.0.0 vs ^6.0.0 冲突 | 统一为 ^6.0.0 |
+| M-5 报告描述不准确 | 报告称 Mixer.volume 有 clamp，实际也没有。已在 findings.md 记录 |

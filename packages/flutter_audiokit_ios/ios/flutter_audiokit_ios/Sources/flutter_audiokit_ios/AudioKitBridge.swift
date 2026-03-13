@@ -97,15 +97,21 @@ class AudioKitBridge: AudioKitHostApi {
     /// Starts a 10 Hz timer that periodically sends player state to Dart.
     private func startProgressTimer(nodeId: String) {
         stopProgressTimer(nodeId: nodeId)
-        let timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { [weak self] _ in
+        let timer = Timer(timeInterval: 0.1, repeats: true) { [weak self] _ in
             guard let self = self,
                   let player = self.nodes[nodeId] as? AudioPlayer,
                   player.isPlaying else {
                 self?.stopProgressTimer(nodeId: nodeId)
+                // M-7: Send final state so Dart doesn't stay stuck on "playing"
+                if let self = self, let player = self.nodes[nodeId] as? AudioPlayer {
+                    self.sendPlayerState(nodeId: nodeId, player: player)
+                }
                 return
             }
             self.sendPlayerState(nodeId: nodeId, player: player)
         }
+        // M-1: Add to .common mode so timer fires during UIScrollView tracking
+        RunLoop.main.add(timer, forMode: .common)
         progressTimers[nodeId] = timer
     }
 
@@ -182,15 +188,17 @@ class AudioKitBridge: AudioKitHostApi {
 
     func playerPlay(nodeId: String, startTime: Double?, endTime: Double?) throws {
         let player = try getPlayer(nodeId)
-        player.play(
-            from: startTime.map { TimeInterval($0) },
-            to: endTime.map { TimeInterval($0) }
-        )
 
+        // C-5: Set completionHandler BEFORE play() to avoid race on short audio files
         player.completionHandler = { [weak self] in
             self?.stopProgressTimer(nodeId: nodeId)
             self?.flutterApi?.onPlaybackCompleted(nodeId: nodeId) { _ in }
         }
+
+        player.play(
+            from: startTime.map { TimeInterval($0) },
+            to: endTime.map { TimeInterval($0) }
+        )
 
         sendPlayerState(nodeId: nodeId, player: player)
         startProgressTimer(nodeId: nodeId)
@@ -372,8 +380,9 @@ class AudioKitBridge: AudioKitHostApi {
 
     func disposeNode(nodeId: String) throws {
         stopProgressTimer(nodeId: nodeId)
-        amplitudeTaps.removeValue(forKey: nodeId)
-        pitchTaps.removeValue(forKey: nodeId)
+        // C-2: Stop taps before removing to prevent EXC_BAD_ACCESS
+        amplitudeTaps.removeValue(forKey: nodeId)?.stop()
+        pitchTaps.removeValue(forKey: nodeId)?.stop()
         nodes.removeValue(forKey: nodeId)
     }
 
@@ -404,10 +413,24 @@ class AudioKitBridge: AudioKitHostApi {
                 return
             }
         }
-        // Reverb's dryWetMix is a direct property, not a standard AudioKit parameter
-        if let reverb = node as? Reverb, identifier == "dryWetMix" {
-            reverb.dryWetMix = AUValue(value)
-            return
+        // dryWetMix is a direct property on these nodes, not a standard AudioKit @Parameter
+        if identifier == "dryWetMix" {
+            if let reverb = node as? Reverb {
+                reverb.dryWetMix = AUValue(value); return
+            }
+            // C-1: Handle dryWetMix for effects that use direct property
+            if let vd = node as? VariableDelay {
+                vd.dryWetMix = AUValue(value); return
+            }
+            if let td = node as? TanhDistortion {
+                td.dryWetMix = AUValue(value); return
+            }
+            if let bc = node as? BitCrusher {
+                bc.dryWetMix = AUValue(value); return
+            }
+            if let ph = node as? Phaser {
+                ph.dryWetMix = AUValue(value); return
+            }
         }
         // ZitaReverb's equalizerFrequency2Def has a mismatched identifier ("EQ Frequency 2")
         // in AudioKit's source; map our canonical name to the actual identifier.
@@ -430,6 +453,24 @@ class AudioKitBridge: AudioKitHostApi {
             if param.def.identifier == identifier {
                 param.ramp(to: AUValue(value), duration: Float(duration), delay: Float(delay))
                 return
+            }
+        }
+        // C-3: dryWetMix is a direct property — doesn't support ramp, so set immediately
+        if identifier == "dryWetMix" {
+            if let reverb = node as? Reverb {
+                reverb.dryWetMix = AUValue(value); return
+            }
+            if let vd = node as? VariableDelay {
+                vd.dryWetMix = AUValue(value); return
+            }
+            if let td = node as? TanhDistortion {
+                td.dryWetMix = AUValue(value); return
+            }
+            if let bc = node as? BitCrusher {
+                bc.dryWetMix = AUValue(value); return
+            }
+            if let ph = node as? Phaser {
+                ph.dryWetMix = AUValue(value); return
             }
         }
         // ZitaReverb's equalizerFrequency2Def has a mismatched identifier in AudioKit's source
@@ -477,7 +518,7 @@ class AudioKitBridge: AudioKitHostApi {
                          time: p("time", 1),
                          feedback: p("feedback", 50),
                          lowPassCutoff: p("lowPassCutoff", 15000),
-                         dryWetMix: p("dryWetMix", 100))
+                         dryWetMix: p("dryWetMix", 50))
         case "Reverb":
             node = Reverb(input, dryWetMix: p("dryWetMix", 0.5))
         case "Distortion":
@@ -572,7 +613,7 @@ class AudioKitBridge: AudioKitHostApi {
                                           threshold: p("threshold", 0),
                                           attackDuration: p("attackDuration", 0.1),
                                           releaseDuration: p("releaseDuration", 0.1),
-                                          gain: p("gain", 1),
+                                          gain: p("gain", 0),
                                           dryWetMix: p("dryWetMix", 1))
         case "Panner":
             node = Panner(input, pan: p("pan", 0))
@@ -803,6 +844,8 @@ class AudioKitBridge: AudioKitHostApi {
         let node = try getNode(nodeId)
         let tap = PitchTap(node, bufferSize: UInt32(bufferSize)) { [weak self] pitches, amplitudes in
             guard let self = self else { return }
+            // M-2: Guard against empty arrays from abnormal audio formats
+            guard !pitches.isEmpty, !amplitudes.isEmpty else { return }
             let data = PlatformPitchData(
                 nodeId: nodeId,
                 leftPitch: Double(pitches[0]),

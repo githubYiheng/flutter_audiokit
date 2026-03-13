@@ -13,6 +13,7 @@ class CombFilterReverb extends Node {
   bool _isDisposed = false;
 
   double _reverbDuration = 1.0;
+  double _loopDuration = 0.1;
 
   @override
   String get nodeId => _nodeId;
@@ -45,8 +46,12 @@ class CombFilterReverb extends Node {
       },
     );
     return CombFilterReverb._(nodeId, input)
-      .._reverbDuration = reverbDuration;
+      .._reverbDuration = reverbDuration
+      .._loopDuration = loopDuration;
   }
+
+  /// Loop duration set at creation (init-only, read-only).
+  double get loopDuration => _loopDuration;
 
   /// Reverb duration in seconds. 0...10, default 1.0.
   double get reverbDuration => _reverbDuration;

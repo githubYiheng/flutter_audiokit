@@ -97,6 +97,10 @@ enum BufferLength {
 }
 
 /// Mirrors Apple's AVAudioUnitReverbPreset.
+///
+/// **WARNING:** The enum order must match `AVAudioUnitReverbPreset` rawValues
+/// exactly. The Dart enum `.index` is passed directly to Swift as `rawValue`.
+/// Do NOT reorder, insert, or remove entries without updating the Swift mapping.
 enum ReverbPreset {
   smallRoom,
   mediumRoom,

@@ -45,7 +45,9 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
       onPlaybackState: (state) {
         _playbackStateController.add(PlaybackState(
           nodeId: state.nodeId,
-          status: PlaybackStatus.values[state.statusIndex],
+          status: state.statusIndex >= 0 && state.statusIndex < PlaybackStatus.values.length
+            ? PlaybackStatus.values[state.statusIndex]
+            : PlaybackStatus.stopped,
           currentTime: state.currentTime,
           duration: state.duration,
         ));
@@ -79,11 +81,6 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
       },
     );
     AudioKitFlutterApi.setUp(flutterApi);
-  }
-
-  void _setupEventChannels() {
-    // EventChannels for high-frequency data can be added here as needed.
-    // For Phase 1, we use Pigeon's FlutterApi for all callbacks.
   }
 
   // ==== AudioEngine ====
@@ -167,7 +164,9 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
     final state = await _hostApi.getPlayerState(nodeId);
     return PlaybackState(
       nodeId: state.nodeId,
-      status: PlaybackStatus.values[state.statusIndex],
+      status: state.statusIndex >= 0 && state.statusIndex < PlaybackStatus.values.length
+            ? PlaybackStatus.values[state.statusIndex]
+            : PlaybackStatus.stopped,
       currentTime: state.currentTime,
       duration: state.duration,
     );
@@ -186,13 +185,11 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   }
 
   @override
-  Future<void> mixerAddInput(String mixerId, String nodeId,
-      {ConnectStrategy strategy = ConnectStrategy.complete}) async =>
+  Future<void> mixerAddInput(String mixerId, String nodeId) async =>
       _hostApi.mixerAddInput(mixerId, nodeId);
 
   @override
-  Future<void> mixerRemoveInput(String mixerId, String nodeId,
-      {DisconnectStrategy strategy = DisconnectStrategy.recursive}) async =>
+  Future<void> mixerRemoveInput(String mixerId, String nodeId) async =>
       _hostApi.mixerRemoveInput(mixerId, nodeId);
 
   @override

@@ -15,6 +15,7 @@ class VariableDelay extends Node {
   double _time = 0.0;
   double _feedback = 0.0;
   double _dryWetMix = 1.0;
+  double _maximumTime = 10.0;
 
   @override
   String get nodeId => _nodeId;
@@ -53,13 +54,17 @@ class VariableDelay extends Node {
     return VariableDelay._(nodeId, input)
       .._time = time
       .._feedback = feedback
-      .._dryWetMix = dryWetMix;
+      .._dryWetMix = dryWetMix
+      .._maximumTime = maximumTime;
   }
 
-  /// Delay time in seconds. 0...10, default 0.
+  /// The maximum delay time set at creation (read-only).
+  double get maximumTime => _maximumTime;
+
+  /// Delay time in seconds. 0...[maximumTime], default 0.
   double get time => _time;
   set time(double value) {
-    _time = value.clamp(0.0, 10.0);
+    _time = value.clamp(0.0, _maximumTime);
     FlutterAudioKitPlatform.instance
         .setNodeParameter(_nodeId, 'time', _time);
   }

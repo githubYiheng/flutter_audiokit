@@ -1,55 +1,59 @@
-# Findings
+# Findings — Code Review 报告验证
 
-## Pigeon 代码生成行为
-- Pigeon 22.7.x 生成的 HostApi Dart 代码中，**所有方法都返回 Future**，无论原始定义是否标记 @async
-- 这与手写代码假设同步调用不兼容 — flutter_audiokit_ios.dart 有 5 处需要加 await（已修复）
-- 生成的 Swift 代码中，@async 标记的方法使用 completion handler，未标记的使用 throws
+## 验证结果汇总
 
-## Melos 7.x 变更
-- 配置从独立 `melos.yaml` 迁移到根 `pubspec.yaml` 的 `melos:` 字段
-- 需要根 `pubspec.yaml` 的 `workspace:` 字段列出所有包
-- 每个包的 pubspec.yaml 需要 `resolution: workspace`
-- 最低 SDK 要求 >=3.5.0
-- workspace 中所有包的 dev_dependencies 版本必须兼容（如 flutter_lints 必须统一）
+29 个问题全部逐一对照代码验证。**28 个确认存在，1 个有争议。**
 
-## AudioKit 参数系统
-- AudioKit 的 @Parameter 包装器注册标准参数 → getNodeParameters / setNodeParameter 可用
-- Apple AU 效果器（Reverb）的 dryWetMix 是直接属性，不走标准参数系统 → 需特殊处理
-- ZitaReverb 的 equalizerFrequency2 的 NodeParameterDef identifier 是 "EQ Frequency 2" 而非 "equalizerFrequency2" → 需 fallback
-- AVAudioUnitReverbPreset（不是 AVAudioUnitReverbPresetType）是正确的 Swift 类型名
+---
 
-## SoundpipeAudioKit 效果器 init 参数差异
-- VariableDelay、TanhDistortion、BitCrusher、Phaser 的 `dryWetMix` 不在 init 参数列表中
-  → 创建后需要单独通过属性赋值设置
-- Tremolo、AutoPanner 接受 `waveform: Table` 参数（默认 positiveSine）
-  → Table 类型暂不桥接，使用默认值
-- Vibrato 的 init 参数名是 `vibratoSpeed` / `vibratoDepth`（不是 `speed` / `depth`）
-  → Dart 侧用 `speed` / `depth`，Swift 侧映射到 `vibratoSpeed` / `vibratoDepth`
-- FlatFrequencyResponseReverb / CombFilterReverb 的 `loopDuration` 是 init-only 参数
-  → 通过 params map 传递到 Swift，但不暴露为 Dart setter
+## CRITICAL (5/5 确认存在)
 
-## Convolution 特殊处理
-- `Convolution(input, impulseResponseFileURL:, partitionLength:)` 需要 URL 参数
-- `createEffect` 的 `params: Map<String, double>` 无法传递字符串
-- → 新增专用 Pigeon 方法 `createConvolution(inputNodeId, filePath, partitionLength)`
+| ID | 问题 | 状态 | 备注 |
+|----|------|------|------|
+| C-1 | dryWetMix setter 对 4 个效果器抛异常 | ✅ 确认 | setNodeParameter 只处理 Reverb/ZitaReverb 的 dryWetMix，VariableDelay/TanhDistortion/BitCrusher/Phaser 不在列 |
+| C-2 | Tap 未在 disposeNode 中 stop | ✅ 确认 | disposeNode 只 removeValue 不 .stop()，而 stopAmplitudeTap/stopPitchTap 正确调了 .stop() |
+| C-3 | rampNodeParameter 缺 Reverb dryWetMix | ✅ 确认 | setNodeParameter 有 Reverb dryWetMix 处理，rampNodeParameter 没有 |
+| C-4 | Oscillator.dispose() 无幂等守卫 | ✅ 确认 | 缺 if (_isDisposed) return; 且 _isDisposed=true 在 super.dispose() 之后 |
+| C-5 | completionHandler 在 play() 之后设置 | ✅ 确认 | playerPlay 方法先 player.play()，后设 completionHandler |
 
-## PitchTap 实现
-- PitchTap 回调签名: `(pitches: [Float], amplitudes: [Float]) -> Void`
-- pitches/amplitudes 数组长度取决于声道数（mono=1, stereo=2）
-- 新增 PlatformPitchData 类型 + onPitchData 回调
+## HIGH (6/6 确认存在)
 
-## Flutter 环境
-- Flutter 3.41.4 stable (via FVM)
-- Dart SDK 3.11.1
-- 路径: /Users/designer.ai/fvm/versions/stable/bin/
-- melos 安装在 ~/.pub-cache/bin/melos，但 shell PATH 不包含此目录
+| ID | 问题 | 状态 | 备注 |
+|----|------|------|------|
+| H-1 | 直接依赖 flutter_audiokit_ios | ✅ 确认 | pubspec.yaml dependencies 中有 flutter_audiokit_ios: ^0.1.0 |
+| H-2 | ConnectStrategy/DisconnectStrategy 被丢弃 | ✅ 确认 | iOS impl 接收参数但不传给 Pigeon/Swift |
+| H-3 | disposeEngine 不清理 nodes | ✅ 确认 | 只 engine.stop()，不清理 nodes/taps/timers |
+| H-4 | Mixer.isStarted 和 VariSpeed.isStarted 语义错误 | ✅ 确认 | Mixer 用 volume!=0，VariSpeed 用 rate!=1.0，应该用状态标记 |
+| H-5 | Node/AudioPlayer 方法不检查 isDisposed | ✅ 确认 | Node.start/stop/bypass 和 AudioPlayer 所有方法都无检查 |
+| H-6 | Swift 无主线程保证 | ✅ 确认 | 无 @MainActor，无 DispatchQueue.main.async |
 
-## Example App
-- flutter create 生成的 iOS 默认 deployment target 是 13.0，AudioKit 需要 15.0
-- 需要修改 project.pbxproj 中 3 处 IPHONEOS_DEPLOYMENT_TARGET
-- 音频文件从 Flutter assets 加载时，需先复制到 temp 目录（AudioKit 读取文件路径）
+## MEDIUM (10/11 确认存在，1 个有争议)
 
-## 效果器统计
-- 共 51 个效果器 Dart 类（18 Phase 2 + 33 Phase C）
-- AudioKit Core: 12 个（Delay, Reverb, Distortion, Compressor, DynamicsProcessor, PeakLimiter, 6 种 Filter, ParametricEQ）
-- SoundpipeAudioKit: 39 个（6 Reverb, 1 Delay, 19 Filter, 3 Distortion, 5 Modulation, 1 Spatial, 3 Utility, 1 Convolution）
+| ID | 问题 | 状态 | 备注 |
+|----|------|------|------|
+| M-1 | Timer 未加 .common RunLoop mode | ✅ 确认 | 使用 Timer.scheduledTimer 默认 .default mode |
+| M-2 | PitchTap 无数组边界检查 | ✅ 确认 | pitches[0]/amplitudes[0] 直接访问，无 isEmpty 守卫 |
+| M-3 | Delay 默认 dryWetMix 100 | ✅ 确认 | 应为 50 |
+| M-4 | PlaybackStatus 无边界检查 | ✅ 确认 | 两处直接 .values[state.statusIndex] |
+| M-5 | AudioPlayer.volume 缺 clamp | ⚠️ 有争议 | 报告称"Mixer.volume 有 clamp"但实际 Mixer.volume 也没有 clamp。AudioKit AudioPlayer.volume 可能允许 >1.0 做增益放大。但从 API 安全角度仍建议 clamp |
+| M-6 | VariableDelay.time 硬编码 10.0 | ✅ 确认 | 应使用实际 maximumTime |
+| M-7 | Timer 自停不发最终状态 | ✅ 确认 | guard 失败时只 stopTimer 不 sendPlayerState |
+| M-8 | Mixer.addInput 并发重复添加 | ✅ 确认 | contains 检查在 await 之后 |
+| M-9 | AmplitudeTap 数据竞争 | ✅ 确认 | tap.leftAmplitude 在回调中读取无同步保护 |
+| M-10 | bridge 可能被 ARC 释放 | ✅ 确认 | bridge 是局部变量，依赖 Pigeon 实现细节持有强引用 |
+| M-11 | DynamicRangeCompressor gain 默认值错误 | ✅ 确认 | 默认 1 应为 0 |
+
+### M-5 争议说明
+报告原文称"所有其他 setter（`Mixer.volume`、`TimePitch.rate`、所有效果器参数）均使用 `.clamp()`"，但验证发现 **Mixer.volume 也没有 clamp**。报告此处描述不准确。不过 AudioPlayer.volume 加 clamp 仍然是好实践。
+
+## LOW (7/7 确认存在)
+
+| ID | 问题 | 状态 | 备注 |
+|----|------|------|------|
+| L-1 | FlutterAudioKitPlatform 导出 | ✅ 确认 | 在 barrel export 的 show 列表中 |
+| L-2 | doc comment 错位 | ✅ 确认 | createEffect 和 createOscillator 注释混在一起 |
+| L-3 | onError 流永不 emit | ✅ 确认 | AudioKitBridge 从未调用 flutterApi?.onError() |
+| L-4 | _setupEventChannels 空方法 | ✅ 确认 | 定义但从未调用 |
+| L-5 | editStartTime 等无 setter | ✅ 确认 | 只有 getter，field 初始值不可修改 |
+| L-6 | ReverbPreset 枚举顺序耦合无注释 | ✅ 确认 | index 直接作为 rawValue 传递 |
+| L-7 | loopDuration 创建后不可读 | ✅ 确认 | 传给原生但未存为 Dart 字段 |

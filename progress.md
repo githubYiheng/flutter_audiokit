@@ -1,89 +1,59 @@
-# Progress Log
+# Progress Log — Code Review 修复
 
-## Session 2026-03-12
+## Session 2026-03-13
 
-### Phase 2 完成
-- [x] 18 个效果器全部实现（4 层：Swift/Pigeon/PlatformInterface/Dart）
-- [x] AudioKitBridge.swift 重写 609 行（进度定时器 + createEffect factory 18 case + loadReverbPreset + AmplitudeTap 立体声 + setNodeParameter Reverb/ZitaReverb fallback）
-- [x] 代码审查修复 4 个 bug（AVAudioUnitReverbPreset 类型名、onError 递归、ZitaReverb identifier、doc comment）
+### Phase 1: 验证 CODE_REVIEW_REPORT.md ✅
+- 28/29 确认存在，1 个有争议 (M-5)
 
-### Phase A 验证 ✅
-- [x] A1. melos bootstrap — 4 packages bootstrapped
-- [x] A2. Pigeon 代码生成 — messages.g.dart (1408行) + Messages.g.swift (1139行)
-- [x] A3. Dart 静态分析 — 全部 4 包 0 errors（修复 5 个 await bug）
-- [x] A4. 删除旧 melos.yaml
+### Phase 2: 修复实施
 
-### Phase B Example App ✅
-- [x] `flutter create example --platforms ios`
-- [x] pubspec.yaml: path 依赖 flutter_audiokit + resolution: workspace
-- [x] 根 pubspec.yaml workspace 列表添加 example
-- [x] iOS deployment target 升至 15.0
-- [x] flutter_lints 全部统一为 ^6.0.0
-- [x] melos bootstrap 4 packages 成功
-- [x] main.dart: 完整 demo UI（Engine/Player/Mixer/Reverb/Amplitude/Log）
-- [x] dart analyze example — 0 issues
-- [x] flutter_audiokit barrel export 添加 FlutterAudioKitPlatform
+#### Batch 1: Swift 层 CRITICAL + 同文件 MEDIUM ✅
+修改文件: `AudioKitBridge.swift`
+- C-1: setNodeParameter + rampNodeParameter 添加 VariableDelay/TanhDistortion/BitCrusher/Phaser 的 dryWetMix 处理
+- C-2: disposeNode 中 taps 改为 `.removeValue(forKey:)?.stop()`
+- C-3: rampNodeParameter 添加 Reverb/4 个效果器的 dryWetMix 处理（直接设值，不支持 ramp）
+- C-5: playerPlay 中 completionHandler 移到 play() 之前
+- M-1: Timer 改用 `RunLoop.main.add(timer, forMode: .common)`
+- M-2: PitchTap 添加 `guard !pitches.isEmpty, !amplitudes.isEmpty`
+- M-3: Delay dryWetMix 默认值 100 → 50（Swift + Dart 同步）
+- M-7: Timer 自停路径添加 sendPlayerState
+- M-11: DynamicRangeCompressor gain 默认值 1 → 0（Swift + Dart 同步）
 
-### Phase C 效果器 + 高级功能 ✅
-- [x] 33 个新 Dart 效果器类创建（共 51 个效果器文件）
-- [x] AudioKitBridge.swift createEffect factory 扩展到 50 个 case
-- [x] Pigeon API 新增：PlatformPitchData 类型、createConvolution、startPitchTap、stopPitchTap、onPitchData
-- [x] platform_interface 新增：PitchData 类型、createConvolution、startPitchTap、stopPitchTap、onPitchData
-- [x] flutter_audiokit_ios.dart 实现所有新方法 + PitchTap 回调
-- [x] barrel exports 更新（51 个效果器 + PitchData）
-- [x] Pigeon 代码重新生成（messages.g.dart + Messages.g.swift）
-- [x] dart analyze 全部 4 包 0 errors
+#### Batch 2: Dart 层 CRITICAL + HIGH ✅
+- C-4: oscillator.dart — 添加 `if (_isDisposed) return;` 守卫 + 调整顺序
+- H-4: mixer.dart / vari_speed.dart — `isStarted` 改为 `=> true`（always-on 节点）
+- H-5: node.dart 添加 `_throwIfDisposed()` 在 start/stop/bypass/getParameters/parameter 中调用；audio_player.dart 添加独立 `_throwIfDisposed()` 在所有公开方法中调用
+- M-5: audio_player.dart volume setter 添加 `.clamp(0.0, 1.0)`
+- M-6: variable_delay.dart 存储 `_maximumTime`，clamp 使用该值
+- M-8: mixer.dart addInput 去重检查移到 await 之前
 
-### Files Modified (Phase C)
-- `AudioKitBridge.swift` — +32 new effect cases + createConvolution + PitchTap
-- `pigeons/messages.dart` — +PlatformPitchData + createConvolution + PitchTap methods + onPitchData
-- `messages.g.dart` — Pigeon 重新生成
-- `Messages.g.swift` — Pigeon 重新生成
-- `types.dart` — +PitchData
-- `platform_interface.dart` — +createConvolution + PitchTap + onPitchData stream
-- `flutter_audiokit_ios.dart` — +createConvolution + PitchTap + onPitchData + _pitchController
-- `flutter_audiokit.dart` — barrel 更新（51 effects + PitchData）
+#### Batch 3: 架构 & 配置 ✅
+- H-1: flutter_audiokit/pubspec.yaml 移除 `flutter_audiokit_ios: ^0.1.0` 依赖
+- H-2: 从 platform_interface/iOS impl/mixer.dart 移除 strategy 参数（更新测试）
+- M-10: FlutterAudioKitPlugin.swift bridge 存为 `private static var`
 
-### Files Created (Phase C)
-33 new Dart effect classes:
-- Reverbs: chowning_reverb, flat_frequency_response_reverb, comb_filter_reverb
-- Delay: variable_delay
-- Filters: korg_low_pass_filter, roland_tb303_filter, diode_ladder_filter, low_pass_butterworth_filter, high_pass_butterworth_filter, band_pass_butterworth_filter, band_reject_butterworth_filter, three_pole_lowpass_filter, resonant_filter, equalizer_filter, formant_filter, tone_filter, tone_complement_filter, modal_resonance_filter, peaking_parametric_equalizer_filter, low_shelf_parametric_equalizer_filter, high_shelf_parametric_equalizer_filter
-- Distortion: tanh_distortion, bit_crusher, clipper
-- Modulation: phaser, tremolo, auto_wah, auto_panner, vibrato
-- Spatial: string_resonator
-- Utility: dc_block, amplitude_envelope
-- Special: convolution
+#### Batch 4: Swift 线程安全 — 推迟
+- H-6: Flutter platform channels 默认在主线程调度，实际风险较低
+- M-9: AmplitudeTap 数据竞争需要更深入的设计
 
-### Phase D 测试与文档 ✅
-- [x] platform_interface_test.dart: 80 tests
-  - Instance management (2 tests)
-  - Default implementations throw UnimplementedError (42 tests — 全部 37 方法 + 5 流)
-  - Mock implementation returns expected values (15 tests)
-  - Void methods complete without error (10 tests)
-- [x] types_test.dart: 26 tests
-  - AudioFileInfo (2), PlaybackStatus (1), PlaybackState (5: fields + position 边界)
-  - AudioLevelData (1), AnalysisMode (1), StereoMode (1)
-  - ConnectStrategy (1), DisconnectStrategy (1), BufferLength (3: count + powerOfTwo + samplesCount)
-  - ReverbPreset (2: count + index mapping), NodeParameterInfo (1)
-  - PitchData (2), AudioKitError (4: fields + optional nodeId + Exception + toString)
-- [x] 参数范围验证：51 个效果器的 Dart 默认值和范围与 AudioKitBridge.swift 一致
-- [x] dart analyze: 0 errors (3 info-level lints)
+#### Batch 5: Dart 代码质量 ✅
+- L-2: platform_interface.dart doc comment 修复（移除混入的 createOscillator 注释）
+- L-4: 删除 _setupEventChannels() 空方法
+- L-6: ReverbPreset 枚举添加 WARNING 注释
+- L-7: comb_filter_reverb / flat_frequency_response_reverb 存储 loopDuration 字段
+- M-4: flutter_audiokit_ios.dart 两处 PlaybackStatus 添加边界检查
 
-### Next Steps
-1. 用户提供 demo.mp3 到 example/assets/ 以便真机测试
+### 验证结果
+- `dart analyze` 3 个包: 0 errors, 9 info (全部预存)
+- `flutter test` platform_interface: 106 tests all pass
+- `dart analyze` example: 1 pre-existing warning
 
-### Phase E 项目文档 ✅
-- [x] README.md（根目录）— 项目总览、安装指南、使用示例、架构说明、51 效果器列表
-- [x] packages/flutter_audiokit/README.md — App-facing 包文档、API 概览表、代码示例
-- [x] packages/flutter_audiokit_platform_interface/README.md — 平台接口说明、共享类型列表
-- [x] packages/flutter_audiokit_ios/README.md — iOS 实现说明、Pigeon 工作流、SPM 依赖
-- [x] example/README.md — 替换默认模板，说明 3 个 demo Tab 及运行方式
-- [x] CHANGELOG.md × 3 — flutter_audiokit / platform_interface / ios 各一份
-
-### Key Findings
-- SoundpipeAudioKit 的 VariableDelay、TanhDistortion、BitCrusher、Phaser 的 dryWetMix 不在 init 参数中，需要创建后单独设置
-- Tremolo 和 AutoPanner 接受 Table（waveform）参数，默认 positiveSine，暂不桥接 Table 类型
-- Convolution 需要文件 URL，不能通过 Map<String,double> 的 params 传递 — 新增专用 Pigeon 方法
-- PitchTap 回调返回 pitches 和 amplitudes 数组，左/右声道
-- Vibrato 的 Swift init 参数名是 vibratoSpeed/vibratoDepth（不是 speed/depth）
+### 未修复（推迟）
+| Issue | 原因 |
+|-------|------|
+| H-3 | disposeEngine 清理 nodes 需要 engine→nodes 映射，涉及架构设计 |
+| H-6 | Flutter platform channels 已在主线程调度，实际风险低 |
+| M-9 | AmplitudeTap 数据竞争需要线程同步设计 |
+| L-1 | FlutterAudioKitPlatform 导出涉及 onError API 重新设计 |
+| L-3 | onError 流是否实现涉及错误处理策略决策 |
+| L-5 | editStartTime 等是否需要 setter 涉及 API 范围决策 |

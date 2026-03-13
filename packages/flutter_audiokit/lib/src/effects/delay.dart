@@ -20,7 +20,7 @@ class Delay extends Node {
   double _time = 1.0;
   double _feedback = 50.0;
   double _lowPassCutoff = 15000.0;
-  double _dryWetMix = 100.0;
+  double _dryWetMix = 50.0;
 
   @override
   String get nodeId => _nodeId;
@@ -45,7 +45,7 @@ class Delay extends Node {
     double time = 1.0,
     double feedback = 50.0,
     double lowPassCutoff = 15000.0,
-    double dryWetMix = 100.0,
+    double dryWetMix = 50.0,
   }) async {
     final nodeId = await FlutterAudioKitPlatform.instance.createEffect(
       input.nodeId,
@@ -94,7 +94,7 @@ class Delay extends Node {
         .setNodeParameter(_nodeId, 'lowPassCutoff', _lowPassCutoff);
   }
 
-  /// Dry/wet mix percentage. 0...100, default 100.
+  /// Dry/wet mix percentage. 0...100, default 50.
   ///
   /// Mirrors `delay.dryWetMix`.
   double get dryWetMix => _dryWetMix;
