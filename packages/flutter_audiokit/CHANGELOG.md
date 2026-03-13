@@ -13,3 +13,4 @@
   - Utility: AmplitudeEnvelope, DCBlock, PitchShifter
 - Real-time analysis: AmplitudeTap (stereo), PitchTap
 - Playback streams: state changes, completion, amplitude levels
+- `AudioKitLogger`: dual-layer debug logging (Dart + native Swift), 3 levels (`none`, `info`, `verbose`)

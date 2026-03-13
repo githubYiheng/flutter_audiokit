@@ -116,6 +116,21 @@ FlutterAudioKitPlatform.instance.onPitchData.listen((data) {
 });
 ```
 
+### Debug Logging
+
+```dart
+// Enable verbose logging (Dart + native Swift logs)
+AudioKitLogger.level = AudioKitLogLevel.verbose;
+
+// Info-level: lifecycle events only (create, dispose, play, stop)
+AudioKitLogger.level = AudioKitLogLevel.info;
+
+// Disable logging (default)
+AudioKitLogger.level = AudioKitLogLevel.none;
+```
+
+Logs appear in the VS Code Debug Console, terminal, Flutter DevTools, and Xcode console. Setting the level in Dart automatically syncs to the native (Swift) layer.
+
 ## Architecture
 
 This plugin uses the [Federated Plugin](https://docs.flutter.dev/packages-and-plugins/developing-packages#federated-plugins) pattern:

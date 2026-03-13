@@ -55,3 +55,4 @@ dependencies: [
 
 - Swift files will show `No such module 'Flutter'` errors until the Flutter project is built — this is expected
 - The bridge supports 51 effect types via a generic `createEffect` factory, plus specialized methods for `Convolution` and `PitchTap`
+- Native-side logging is controlled via `setLogLevel` Pigeon method, synced from Dart's `AudioKitLogger`

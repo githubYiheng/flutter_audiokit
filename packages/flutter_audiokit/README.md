@@ -51,6 +51,7 @@ await player.play();
 | `NodeParameter` | Runtime parameter inspection and ramping |
 | `TimePitch` | Time-stretch and pitch-shift |
 | `VariSpeed` | Playback speed adjustment |
+| `AudioKitLogger` | Debug logging control (Dart + native) |
 
 ### Effects (51 classes)
 
@@ -79,6 +80,16 @@ await effect.dispose();
 - `player.onStateChanged` — Playback status, current time, duration
 - `player.onCompleted` — Fires when playback reaches end
 - `player.onAmplitude` — Real-time amplitude levels
+
+### Debug Logging
+
+```dart
+AudioKitLogger.level = AudioKitLogLevel.verbose; // all calls with params
+AudioKitLogger.level = AudioKitLogLevel.info;    // lifecycle events only
+AudioKitLogger.level = AudioKitLogLevel.none;    // off (default)
+```
+
+Setting the level syncs to the native (Swift) layer automatically.
 
 ## Design
 

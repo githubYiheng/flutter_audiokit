@@ -5,3 +5,4 @@
 - Shared data types: `AudioFileInfo`, `PlaybackState`, `PlaybackStatus`, `AudioLevelData`, `PitchData`, `AudioKitError`, `NodeParameterInfo`
 - Enums: `ReverbPreset`, `AnalysisMode`, `StereoMode`, `ConnectStrategy`, `DisconnectStrategy`, `BufferLength`
 - Error and event streams: `onError`, `onPlaybackState`, `onAmplitude`, `onPitchData`
+- `setLogLevel()` method for dual-layer logging control

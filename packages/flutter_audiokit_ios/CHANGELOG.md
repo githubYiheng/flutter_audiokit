@@ -6,3 +6,4 @@
 - `AudioKitBridge.swift`: full bridge supporting 51 effect types, audio engine, player, mixer, oscillator
 - Specialized Pigeon methods for Convolution (impulse response) and PitchTap (pitch detection)
 - Real-time callbacks: playback state, amplitude, pitch data, errors
+- Native-side logging via `setLogLevel` Pigeon method, synced from Dart `AudioKitLogger`
