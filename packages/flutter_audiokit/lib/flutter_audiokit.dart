@@ -91,6 +91,9 @@ export 'src/effects/vibrato.dart';
 // Effects — SoundpipeAudioKit: Spatial
 export 'src/effects/string_resonator.dart';
 
+// Effects — AudioKitEX: Gain
+export 'src/effects/fader.dart';
+
 // Effects — SoundpipeAudioKit: Utility
 export 'src/effects/amplitude_envelope.dart';
 export 'src/effects/dc_block.dart';

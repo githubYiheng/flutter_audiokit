@@ -71,15 +71,18 @@ class _PlayerPageState extends State<_PlayerPage>
     with AutomaticKeepAliveClientMixin {
   AudioEngine? _engine;
   AudioPlayer? _player;
+  Fader? _fader;
   Mixer? _mixer;
   Reverb? _reverb;
 
   bool _engineRunning = false;
   bool _isPlaying = false;
+  bool _fadeInEnabled = false;
   double _currentTime = 0;
   double _duration = 0;
   double _volume = 1.0;
   double _reverbMix = 0.5;
+  double _fadeDuration = 2.0;
   double _leftAmplitude = 0;
   double _rightAmplitude = 0;
 
@@ -102,6 +105,7 @@ class _PlayerPageState extends State<_PlayerPage>
     await _stateSub?.cancel();
     await _ampSub?.cancel();
     await _player?.dispose();
+    await _fader?.dispose();
     await _reverb?.dispose();
     await _mixer?.dispose();
     await _engine?.dispose();
@@ -119,7 +123,8 @@ class _PlayerPageState extends State<_PlayerPage>
       _addLog('Creating engine...');
       final engine = await AudioEngine.create();
       final player = await AudioPlayer.create();
-      final reverb = await Reverb.create(player, dryWetMix: _reverbMix);
+      final fader = await Fader.create(player);
+      final reverb = await Reverb.create(fader, dryWetMix: _reverbMix);
       final mixer = await Mixer.withInputs([reverb]);
 
       await engine.setOutput(mixer);
@@ -144,6 +149,7 @@ class _PlayerPageState extends State<_PlayerPage>
       setState(() {
         _engine = engine;
         _player = player;
+        _fader = fader;
         _mixer = mixer;
         _reverb = reverb;
         _engineRunning = true;
@@ -209,7 +215,16 @@ class _PlayerPageState extends State<_PlayerPage>
         Row(
           children: [
             IconButton.filled(
-                onPressed: _engineRunning ? () => _player?.play() : null,
+                onPressed: _engineRunning
+                    ? () async {
+                        if (_fadeInEnabled) {
+                          await _fader?.rampGain(
+                              from: 0.0, to: 1.0, duration: _fadeDuration);
+                          _addLog('Play with fade-in');
+                        }
+                        _player?.play();
+                      }
+                    : null,
                 icon: const Icon(Icons.play_arrow)),
             IconButton.filled(
                 onPressed: _engineRunning ? () => _player?.pause() : null,
@@ -239,6 +254,55 @@ class _PlayerPageState extends State<_PlayerPage>
             _player?.volume = v;
           },
         ),
+        Row(
+          children: [
+            const Text('Fade-in on play',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Switch(
+              value: _fadeInEnabled,
+              onChanged: (v) => setState(() => _fadeInEnabled = v),
+            ),
+          ],
+        ),
+        _label('Fade Duration (${_fadeDuration.toStringAsFixed(1)}s)'),
+        Slider(
+          value: _fadeDuration,
+          min: 0.5,
+          max: 5.0,
+          onChanged: (v) => setState(() => _fadeDuration = v),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _engineRunning
+                    ? () {
+                        _fader?.rampGain(
+                            from: 0.0, to: 1.0, duration: _fadeDuration);
+                        _addLog(
+                            'Fade in (${_fadeDuration.toStringAsFixed(1)}s)');
+                      }
+                    : null,
+                child: const Text('Fade In'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: ElevatedButton(
+                onPressed: _engineRunning
+                    ? () {
+                        _fader?.rampGain(to: 0.0, duration: _fadeDuration);
+                        _addLog(
+                            'Fade out (${_fadeDuration.toStringAsFixed(1)}s)');
+                      }
+                    : null,
+                child: const Text('Fade Out'),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
         _label('Reverb Dry/Wet'),
         Slider(
           value: _reverbMix,
@@ -321,11 +385,14 @@ class _ToneGeneratorPageState extends State<_ToneGeneratorPage>
     with AutomaticKeepAliveClientMixin {
   AudioEngine? _engine;
   Oscillator? _osc;
+  Fader? _fader;
   Mixer? _mixer;
 
   bool _playing = false;
+  bool _fadeInEnabled = false;
   double _frequency = 440;
   double _amplitude = 0.5;
+  double _fadeDuration = 2.0;
 
   final List<_FrequencyPreset> _presets = const [
     _FrequencyPreset('C4', 261.63),
@@ -353,12 +420,17 @@ class _ToneGeneratorPageState extends State<_ToneGeneratorPage>
         final engine = await AudioEngine.create();
         final osc = await Oscillator.create(
             frequency: _frequency, amplitude: _amplitude);
-        final mixer = await Mixer.withInputs([osc]);
+        final fader = await Fader.create(osc);
+        final mixer = await Mixer.withInputs([fader]);
         await engine.setOutput(mixer);
         await engine.start();
         _engine = engine;
         _osc = osc;
+        _fader = fader;
         _mixer = mixer;
+      }
+      if (_fadeInEnabled) {
+        await _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
       }
       await _osc!.start();
       setState(() => _playing = true);
@@ -370,6 +442,7 @@ class _ToneGeneratorPageState extends State<_ToneGeneratorPage>
   @override
   void dispose() {
     _osc?.dispose();
+    _fader?.dispose();
     _mixer?.dispose();
     _engine?.dispose();
     super.dispose();
@@ -439,6 +512,55 @@ class _ToneGeneratorPageState extends State<_ToneGeneratorPage>
             _osc?.amplitude = v;
           },
         ),
+        const SizedBox(height: 16),
+
+        // Fade
+        Row(
+          children: [
+            const Text('Fade-in on play',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Switch(
+              value: _fadeInEnabled,
+              onChanged: (v) => setState(() => _fadeInEnabled = v),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text('Duration: ${_fadeDuration.toStringAsFixed(1)}s',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        Slider(
+          value: _fadeDuration,
+          min: 0.5,
+          max: 5.0,
+          onChanged: (v) => setState(() => _fadeDuration = v),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _playing
+                    ? () => _fader?.rampGain(
+                        from: 0.0, to: 1.0, duration: _fadeDuration)
+                    : null,
+                child: const Text('Fade In'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _playing
+                    ? () =>
+                        _fader?.rampGain(to: 0.0, duration: _fadeDuration)
+                    : null,
+                child: const Text('Fade Out'),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 24),
 
         // Play button
@@ -477,14 +599,17 @@ class _BinauralBeatsPageState extends State<_BinauralBeatsPage>
   AudioEngine? _engine;
   Oscillator? _oscLeft;
   Oscillator? _oscRight;
+  Fader? _fader;
   Mixer? _mixerLeft;
   Mixer? _mixerRight;
   Mixer? _masterMixer;
 
   bool _playing = false;
+  bool _fadeInEnabled = false;
   double _baseFrequency = 200;
   double _beatFrequency = 10; // difference between L and R
   double _amplitude = 0.5;
+  double _fadeDuration = 2.0;
 
   final List<_BeatPreset> _beatPresets = const [
     _BeatPreset('Delta (deep sleep)', 2),
@@ -524,20 +649,25 @@ class _BinauralBeatsPageState extends State<_BinauralBeatsPage>
         final mixR = await Mixer.withInputs([oscR]);
         mixR.pan = 1.0; // hard right
 
-        // Master mixer
+        // Master mixer → fader
         final master = await Mixer.withInputs([mixL, mixR]);
+        final fader = await Fader.create(master);
 
-        await engine.setOutput(master);
+        await engine.setOutput(fader);
         await engine.start();
 
         _engine = engine;
         _oscLeft = oscL;
         _oscRight = oscR;
+        _fader = fader;
         _mixerLeft = mixL;
         _mixerRight = mixR;
         _masterMixer = master;
       }
 
+      if (_fadeInEnabled) {
+        await _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
+      }
       await _oscLeft!.start();
       await _oscRight!.start();
       setState(() => _playing = true);
@@ -550,6 +680,7 @@ class _BinauralBeatsPageState extends State<_BinauralBeatsPage>
   void dispose() {
     _oscLeft?.dispose();
     _oscRight?.dispose();
+    _fader?.dispose();
     _mixerLeft?.dispose();
     _mixerRight?.dispose();
     _masterMixer?.dispose();
@@ -679,6 +810,55 @@ class _BinauralBeatsPageState extends State<_BinauralBeatsPage>
             _oscLeft?.amplitude = v;
             _oscRight?.amplitude = v;
           },
+        ),
+        const SizedBox(height: 16),
+
+        // Fade
+        Row(
+          children: [
+            const Text('Fade-in on play',
+                style: TextStyle(fontWeight: FontWeight.bold)),
+            const Spacer(),
+            Switch(
+              value: _fadeInEnabled,
+              onChanged: (v) => setState(() => _fadeInEnabled = v),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            Text('Duration: ${_fadeDuration.toStringAsFixed(1)}s',
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        Slider(
+          value: _fadeDuration,
+          min: 0.5,
+          max: 5.0,
+          onChanged: (v) => setState(() => _fadeDuration = v),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _playing
+                    ? () => _fader?.rampGain(
+                        from: 0.0, to: 1.0, duration: _fadeDuration)
+                    : null,
+                child: const Text('Fade In'),
+              ),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: OutlinedButton(
+                onPressed: _playing
+                    ? () =>
+                        _fader?.rampGain(to: 0.0, duration: _fadeDuration)
+                    : null,
+                child: const Text('Fade Out'),
+              ),
+            ),
+          ],
         ),
         const SizedBox(height: 24),
 

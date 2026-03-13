@@ -11,6 +11,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/AudioKit/AudioKit.git", from: "5.6.0"),
+        .package(url: "https://github.com/AudioKit/AudioKitEX.git", from: "5.6.0"),
         .package(url: "https://github.com/AudioKit/SoundpipeAudioKit.git", from: "5.6.0"),
     ],
     targets: [
@@ -18,6 +19,7 @@ let package = Package(
             name: "flutter_audiokit_ios",
             dependencies: [
                 .product(name: "AudioKit", package: "AudioKit"),
+                .product(name: "AudioKitEX", package: "AudioKitEX"),
                 .product(name: "SoundpipeAudioKit", package: "SoundpipeAudioKit"),
             ],
             resources: []

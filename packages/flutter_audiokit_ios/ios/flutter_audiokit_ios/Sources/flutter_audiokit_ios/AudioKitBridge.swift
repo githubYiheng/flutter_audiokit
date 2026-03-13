@@ -1,6 +1,7 @@
 import AVFoundation
 import Flutter
 import AudioKit
+import AudioKitEX
 import SoundpipeAudioKit
 import os
 
@@ -678,6 +679,8 @@ class AudioKitBridge: AudioKitHostApi {
                                           releaseDuration: p("releaseDuration", 0.1),
                                           gain: p("gain", 0),
                                           dryWetMix: p("dryWetMix", 1))
+        case "Fader":
+            node = Fader(input, gain: p("gain", 1))
         case "Panner":
             node = Panner(input, pan: p("pan", 0))
         case "PitchShifter":
