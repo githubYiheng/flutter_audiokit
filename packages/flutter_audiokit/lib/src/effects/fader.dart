@@ -133,15 +133,15 @@ class Fader extends Node {
 
   /// Ramps gain (both channels) to [to] over [duration] seconds.
   ///
-  /// If [from] is provided, the gain is set to that value first (awaited)
-  /// before the ramp begins. This is essential for fade-in where you need
-  /// to start from silence.
+  /// If [from] is provided, the gain is instantly set to [from] via the audio
+  /// scheduler (duration=0 ramp), then ramped to [to]. All calls are dispatched
+  /// in a single batch to preserve ordering on the native audio timeline.
   ///
   /// ```dart
   /// // Fade in from silence over 2 seconds
-  /// await fader.rampGain(from: 0.0, to: 1.0, duration: 2.0);
+  /// fader.rampGain(from: 0.0, to: 1.0, duration: 2.0);
   /// // Fade out from current gain
-  /// await fader.rampGain(to: 0.0, duration: 1.5);
+  /// fader.rampGain(to: 0.0, duration: 1.5);
   /// ```
   Future<void> rampGain({
     required double to,
@@ -149,38 +149,49 @@ class Fader extends Node {
     double? from,
     double delay = 0,
   }) async {
-    if (from != null) {
-      final start = from < 0 ? 0.0 : from;
-      _leftGain = start;
-      _rightGain = start;
-      await Future.wait([
-        FlutterAudioKitPlatform.instance
-            .setNodeParameter(_nodeId, 'leftGain', start),
-        FlutterAudioKitPlatform.instance
-            .setNodeParameter(_nodeId, 'rightGain', start),
-      ]);
-    }
     final target = to < 0 ? 0.0 : to;
     _leftGain = target;
     _rightGain = target;
-    AudioKitLogger.info(
-        'Fader($_nodeId) rampGain ${from != null ? "$from -> " : ""}$target over ${duration}s');
-    await Future.wait([
-      FlutterAudioKitPlatform.instance.rampNodeParameter(
-        _nodeId,
-        'leftGain',
-        value: target,
-        duration: duration,
-        delay: delay,
-      ),
-      FlutterAudioKitPlatform.instance.rampNodeParameter(
-        _nodeId,
-        'rightGain',
-        value: target,
-        duration: duration,
-        delay: delay,
-      ),
-    ]);
+    if (from != null) {
+      final start = from < 0 ? 0.0 : from;
+      AudioKitLogger.info(
+          'Fader($_nodeId) rampGain $start -> $target over ${duration}s');
+      // Dispatch all 4 calls at once — no intermediate await — so they
+      // arrive at the native audio scheduler in a single batch:
+      //   1) Instantly set to [start] (duration=0)
+      //   2) Ramp to [target] over [duration] (tiny delay to sequence after 1)
+      await Future.wait([
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'leftGain',
+          value: start, duration: 0, delay: delay,
+        ),
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'rightGain',
+          value: start, duration: 0, delay: delay,
+        ),
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'leftGain',
+          value: target, duration: duration, delay: delay + 0.001,
+        ),
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'rightGain',
+          value: target, duration: duration, delay: delay + 0.001,
+        ),
+      ]);
+    } else {
+      AudioKitLogger.info(
+          'Fader($_nodeId) rampGain -> $target over ${duration}s');
+      await Future.wait([
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'leftGain',
+          value: target, duration: duration, delay: delay,
+        ),
+        FlutterAudioKitPlatform.instance.rampNodeParameter(
+          _nodeId, 'rightGain',
+          value: target, duration: duration, delay: delay,
+        ),
+      ]);
+    }
   }
 
   /// Ramps left channel gain to [to] over [duration] seconds.

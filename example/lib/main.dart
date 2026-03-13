@@ -216,9 +216,9 @@ class _PlayerPageState extends State<_PlayerPage>
           children: [
             IconButton.filled(
                 onPressed: _engineRunning
-                    ? () async {
+                    ? () {
                         if (_fadeInEnabled) {
-                          await _fader?.rampGain(
+                          _fader?.rampGain(
                               from: 0.0, to: 1.0, duration: _fadeDuration);
                           _addLog('Play with fade-in');
                         }
@@ -430,7 +430,7 @@ class _ToneGeneratorPageState extends State<_ToneGeneratorPage>
         _mixer = mixer;
       }
       if (_fadeInEnabled) {
-        await _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
+        _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
       }
       await _osc!.start();
       setState(() => _playing = true);
@@ -666,7 +666,7 @@ class _BinauralBeatsPageState extends State<_BinauralBeatsPage>
       }
 
       if (_fadeInEnabled) {
-        await _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
+        _fader?.rampGain(from: 0.0, to: 1.0, duration: _fadeDuration);
       }
       await _oscLeft!.start();
       await _oscRight!.start();
