@@ -130,6 +130,55 @@ class NodeParameterInfo {
   final double maxValue;
 }
 
+/// Remote command from iOS system media controls (lock screen / headphones / CarPlay).
+enum RemoteCommand {
+  togglePlayPause,
+  play,
+  pause,
+  nextTrack,
+  previousTrack,
+  skipForward,
+  skipBackward,
+  changePlaybackPosition,
+}
+
+/// Remote command event with optional position data.
+class RemoteCommandEvent {
+  const RemoteCommandEvent({
+    required this.command,
+    this.position,
+  });
+
+  /// The command type.
+  final RemoteCommand command;
+
+  /// Playback position in seconds — used for [RemoteCommand.changePlaybackPosition].
+  final double? position;
+}
+
+/// Configuration for which remote commands are enabled on the system media controls.
+class RemoteCommandConfig {
+  const RemoteCommandConfig({
+    this.playPauseEnabled = true,
+    this.nextTrackEnabled = true,
+    this.previousTrackEnabled = true,
+    this.skipForwardEnabled = false,
+    this.skipForwardInterval = 15.0,
+    this.skipBackwardEnabled = false,
+    this.skipBackwardInterval = 15.0,
+    this.seekEnabled = false,
+  });
+
+  final bool playPauseEnabled;
+  final bool nextTrackEnabled;
+  final bool previousTrackEnabled;
+  final bool skipForwardEnabled;
+  final double skipForwardInterval;
+  final bool skipBackwardEnabled;
+  final double skipBackwardInterval;
+  final bool seekEnabled;
+}
+
 /// Pitch detection data from PitchTap.
 class PitchData {
   const PitchData({

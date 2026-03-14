@@ -2,6 +2,7 @@ import AVFoundation
 import Flutter
 import AudioKit
 import AudioKitEX
+import MediaPlayer
 import SoundpipeAudioKit
 import os
 
@@ -953,5 +954,161 @@ class AudioKitBridge: AudioKitHostApi {
     func setLogLevel(level: Int64) throws {
         AudioKitBridge.logLevel = Int(level)
         logInfo("Log level set to \(level)")
+    }
+
+    // MARK: - Now Playing
+
+    /// Cached artwork to avoid reloading the same image.
+    private var cachedArtworkKey: String?
+    private var cachedArtwork: MPMediaItemArtwork?
+
+    func updateNowPlayingInfo(info: PlatformNowPlayingInfo) throws {
+        var nowPlayingInfo: [String: Any] = [
+            MPMediaItemPropertyTitle: info.title,
+            MPMediaItemPropertyArtist: info.artist,
+            MPNowPlayingInfoPropertyPlaybackRate: info.isPlaying ? 1.0 : 0.0,
+            MPNowPlayingInfoPropertyDefaultPlaybackRate: 1.0,
+        ]
+
+        if info.isLiveStream {
+            nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = true
+        }
+        if let duration = info.duration {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        }
+        if let currentTime = info.currentTime {
+            nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = currentTime
+        }
+        if let assetKey = info.artworkAssetKey {
+            if let artwork = resolveArtwork(assetKey: assetKey) {
+                nowPlayingInfo[MPMediaItemPropertyArtwork] = artwork
+            }
+        }
+
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
+        logInfo("NowPlaying updated: \(info.title)")
+    }
+
+    func clearNowPlayingInfo() throws {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        cachedArtworkKey = nil
+        cachedArtwork = nil
+        logInfo("NowPlaying cleared")
+    }
+
+    func configureRemoteCommands(config: PlatformRemoteCommandConfig) throws {
+        let cc = MPRemoteCommandCenter.shared()
+
+        // Remove existing targets
+        cc.playCommand.removeTarget(nil)
+        cc.pauseCommand.removeTarget(nil)
+        cc.togglePlayPauseCommand.removeTarget(nil)
+        cc.nextTrackCommand.removeTarget(nil)
+        cc.previousTrackCommand.removeTarget(nil)
+        cc.skipForwardCommand.removeTarget(nil)
+        cc.skipBackwardCommand.removeTarget(nil)
+        cc.changePlaybackPositionCommand.removeTarget(nil)
+
+        // Play / Pause
+        if config.playPauseEnabled {
+            cc.playCommand.isEnabled = true
+            cc.playCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.play); return .success
+            }
+            cc.pauseCommand.isEnabled = true
+            cc.pauseCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.pause); return .success
+            }
+            cc.togglePlayPauseCommand.isEnabled = true
+            cc.togglePlayPauseCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.togglePlayPause); return .success
+            }
+        } else {
+            cc.playCommand.isEnabled = false
+            cc.pauseCommand.isEnabled = false
+            cc.togglePlayPauseCommand.isEnabled = false
+        }
+
+        // Next / Previous
+        cc.nextTrackCommand.isEnabled = config.nextTrackEnabled
+        if config.nextTrackEnabled {
+            cc.nextTrackCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.nextTrack); return .success
+            }
+        }
+        cc.previousTrackCommand.isEnabled = config.previousTrackEnabled
+        if config.previousTrackEnabled {
+            cc.previousTrackCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.previousTrack); return .success
+            }
+        }
+
+        // Skip Forward / Backward
+        cc.skipForwardCommand.isEnabled = config.skipForwardEnabled
+        if config.skipForwardEnabled {
+            cc.skipForwardCommand.preferredIntervals = [NSNumber(value: config.skipForwardInterval)]
+            cc.skipForwardCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.skipForward); return .success
+            }
+        }
+        cc.skipBackwardCommand.isEnabled = config.skipBackwardEnabled
+        if config.skipBackwardEnabled {
+            cc.skipBackwardCommand.preferredIntervals = [NSNumber(value: config.skipBackwardInterval)]
+            cc.skipBackwardCommand.addTarget { [weak self] _ in
+                self?.sendRemoteCommand(.skipBackward); return .success
+            }
+        }
+
+        // Seek
+        cc.changePlaybackPositionCommand.isEnabled = config.seekEnabled
+        if config.seekEnabled {
+            cc.changePlaybackPositionCommand.addTarget { [weak self] event in
+                guard let posEvent = event as? MPChangePlaybackPositionCommandEvent else {
+                    return .commandFailed
+                }
+                self?.flutterApi?.onRemoteCommand(
+                    event: PlatformRemoteCommandEvent(
+                        command: .changePlaybackPosition,
+                        position: posEvent.positionTime
+                    )
+                ) { _ in }
+                return .success
+            }
+        }
+
+        logInfo("Remote commands configured")
+    }
+
+    func disableRemoteCommands() throws {
+        let cc = MPRemoteCommandCenter.shared()
+        for cmd in [cc.playCommand, cc.pauseCommand, cc.togglePlayPauseCommand,
+                    cc.nextTrackCommand, cc.previousTrackCommand,
+                    cc.skipForwardCommand, cc.skipBackwardCommand,
+                    cc.changePlaybackPositionCommand] as [MPRemoteCommand] {
+            cmd.removeTarget(nil)
+            cmd.isEnabled = false
+        }
+        logInfo("Remote commands disabled")
+    }
+
+    private func sendRemoteCommand(_ command: PlatformRemoteCommand) {
+        flutterApi?.onRemoteCommand(
+            event: PlatformRemoteCommandEvent(command: command, position: nil)
+        ) { _ in }
+    }
+
+    private func resolveArtwork(assetKey: String) -> MPMediaItemArtwork? {
+        if assetKey == cachedArtworkKey, let cached = cachedArtwork {
+            return cached
+        }
+        let flutterKey = FlutterDartProject.lookupKey(forAsset: assetKey)
+        guard let path = Bundle.main.path(forResource: flutterKey, ofType: nil),
+              let image = UIImage(contentsOfFile: path) else {
+            return nil
+        }
+        let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+        cachedArtworkKey = assetKey
+        cachedArtwork = artwork
+        return artwork
     }
 }

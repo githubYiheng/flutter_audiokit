@@ -95,6 +95,74 @@ class PlatformNodeParameterInfo {
 }
 
 // ============================================================
+// Now Playing data classes
+// ============================================================
+
+/// Metadata for iOS Now Playing Info Center.
+class PlatformNowPlayingInfo {
+  PlatformNowPlayingInfo({
+    required this.title,
+    required this.artist,
+    this.artworkAssetKey,
+    required this.isPlaying,
+    this.duration,
+    this.currentTime,
+    required this.isLiveStream,
+  });
+  final String title;
+  final String artist;
+  final String? artworkAssetKey;
+  final bool isPlaying;
+  final double? duration;
+  final double? currentTime;
+  final bool isLiveStream;
+}
+
+/// Configuration for which remote commands are enabled.
+class PlatformRemoteCommandConfig {
+  PlatformRemoteCommandConfig({
+    required this.playPauseEnabled,
+    required this.nextTrackEnabled,
+    required this.previousTrackEnabled,
+    required this.skipForwardEnabled,
+    required this.skipForwardInterval,
+    required this.skipBackwardEnabled,
+    required this.skipBackwardInterval,
+    required this.seekEnabled,
+  });
+  final bool playPauseEnabled;
+  final bool nextTrackEnabled;
+  final bool previousTrackEnabled;
+  final bool skipForwardEnabled;
+  final double skipForwardInterval;
+  final bool skipBackwardEnabled;
+  final double skipBackwardInterval;
+  final bool seekEnabled;
+}
+
+/// Remote command type from iOS system.
+enum PlatformRemoteCommand {
+  togglePlayPause,
+  play,
+  pause,
+  nextTrack,
+  previousTrack,
+  skipForward,
+  skipBackward,
+  changePlaybackPosition,
+}
+
+/// Remote command event with optional position data.
+class PlatformRemoteCommandEvent {
+  PlatformRemoteCommandEvent({
+    required this.command,
+    this.position,
+  });
+  final PlatformRemoteCommand command;
+  final double? position;
+}
+
+// ============================================================
 // Host API: Dart -> Swift
 // ============================================================
 
@@ -240,6 +308,15 @@ abstract class AudioKitHostApi {
 
   // ---- Logging ----
   void setLogLevel(int level);
+
+  // ---- Now Playing ----
+  void updateNowPlayingInfo(PlatformNowPlayingInfo info);
+
+  void clearNowPlayingInfo();
+
+  void configureRemoteCommands(PlatformRemoteCommandConfig config);
+
+  void disableRemoteCommands();
 }
 
 // ============================================================
@@ -257,4 +334,6 @@ abstract class AudioKitFlutterApi {
   void onError(String nodeId, String code, String message);
 
   void onPitchData(PlatformPitchData data);
+
+  void onRemoteCommand(PlatformRemoteCommandEvent event);
 }

@@ -14,10 +14,15 @@ export 'package:flutter_audiokit_platform_interface/flutter_audiokit_platform_in
         PitchData,
         PlaybackState,
         PlaybackStatus,
+        RemoteCommand,
+        RemoteCommandConfig,
+        RemoteCommandEvent,
         ReverbPreset,
         StereoMode;
 
 export 'src/logger.dart';
+
+export 'src/now_playing.dart';
 
 export 'src/audio_engine.dart';
 export 'src/audio_player.dart';

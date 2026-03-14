@@ -17,6 +17,7 @@ Provides a complete, 1:1 mirror of AudioKit's native Swift API — including aud
 - **AmplitudeTap** — Real-time stereo amplitude monitoring
 - **PitchTap** — Real-time pitch detection
 - **NodeParameter** — Runtime parameter inspection and ramping
+- **NowPlaying** — iOS system media controls (lock screen, control center, headphones, CarPlay)
 
 ## Getting Started
 
@@ -114,6 +115,41 @@ await player.startPitchTap();
 FlutterAudioKitPlatform.instance.onPitchData.listen((data) {
   print('Pitch: ${data.pitch} Hz, Amplitude: ${data.amplitude}');
 });
+```
+
+### System Media Controls (Now Playing)
+
+```dart
+// Configure which remote commands to enable
+await NowPlaying.configureCommands(const RemoteCommandConfig(
+  playPauseEnabled: true,
+  nextTrackEnabled: true,
+  previousTrackEnabled: true,
+));
+
+// Update lock screen / control center metadata
+await NowPlaying.update(
+  title: 'Deep Theta Waves',
+  artist: 'Sleep · 40 Hz',
+  artworkAssetKey: 'assets/artwork.jpg',
+  isPlaying: true,
+  isLiveStream: true, // hides progress bar
+);
+
+// Listen for remote commands (headphones, lock screen, CarPlay)
+NowPlaying.onRemoteCommand.listen((event) {
+  switch (event.command) {
+    case RemoteCommand.togglePlayPause: // ...
+    case RemoteCommand.nextTrack: // ...
+    case RemoteCommand.previousTrack: // ...
+    case RemoteCommand.changePlaybackPosition:
+      final position = event.position; // seek position in seconds
+    default: break;
+  }
+});
+
+// Clear metadata
+await NowPlaying.clear();
 ```
 
 ### Debug Logging

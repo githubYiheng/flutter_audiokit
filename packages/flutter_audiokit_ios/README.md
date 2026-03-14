@@ -15,7 +15,7 @@ AudioKit / SoundpipeAudioKit frameworks
 ```
 
 - **`FlutterAudioKitPlugin.swift`** — Plugin registration entry point
-- **`AudioKitBridge.swift`** — Core bridge implementation: manages AudioKit nodes, handles all Pigeon API calls, routes parameters and callbacks
+- **`AudioKitBridge.swift`** — Core bridge implementation: manages AudioKit nodes, Now Playing / remote commands, handles all Pigeon API calls, routes parameters and callbacks
 - **`Messages.g.swift`** — Pigeon-generated Swift code (do not edit)
 
 ### Pigeon Code Generation
@@ -54,5 +54,5 @@ dependencies: [
 ## Notes
 
 - Swift files will show `No such module 'Flutter'` errors until the Flutter project is built — this is expected
-- The bridge supports 51 effect types via a generic `createEffect` factory, plus specialized methods for `Convolution` and `PitchTap`
+- The bridge supports 51 effect types via a generic `createEffect` factory, plus specialized methods for `Convolution`, `PitchTap`, and system media controls (`MPNowPlayingInfoCenter` + `MPRemoteCommandCenter`)
 - Native-side logging is controlled via `setLogLevel` Pigeon method, synced from Dart's `AudioKitLogger`

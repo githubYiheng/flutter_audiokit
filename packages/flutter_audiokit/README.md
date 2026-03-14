@@ -51,6 +51,7 @@ await player.play();
 | `NodeParameter` | Runtime parameter inspection and ramping |
 | `TimePitch` | Time-stretch and pitch-shift |
 | `VariSpeed` | Playback speed adjustment |
+| `NowPlaying` | iOS system media controls (lock screen / CarPlay) |
 | `AudioKitLogger` | Debug logging control (Dart + native) |
 
 ### Effects (51 classes)

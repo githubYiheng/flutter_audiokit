@@ -387,4 +387,41 @@ abstract class FlutterAudioKitPlatform extends PlatformInterface {
   Future<void> setLogLevel(int level) {
     throw UnimplementedError('setLogLevel() not implemented.');
   }
+
+  // ===========================================================
+  // Now Playing — iOS system media controls
+  // ===========================================================
+
+  /// Updates the system Now Playing info (lock screen / control center / CarPlay).
+  Future<void> updateNowPlayingInfo({
+    required String title,
+    required String artist,
+    String? artworkAssetKey,
+    required bool isPlaying,
+    double? duration,
+    double? currentTime,
+    bool isLiveStream = true,
+  }) {
+    throw UnimplementedError('updateNowPlayingInfo() not implemented.');
+  }
+
+  /// Clears all Now Playing metadata.
+  Future<void> clearNowPlayingInfo() {
+    throw UnimplementedError('clearNowPlayingInfo() not implemented.');
+  }
+
+  /// Configures which remote commands are enabled on the system media controls.
+  Future<void> configureRemoteCommands(RemoteCommandConfig config) {
+    throw UnimplementedError('configureRemoteCommands() not implemented.');
+  }
+
+  /// Disables all remote command handlers.
+  Future<void> disableRemoteCommands() {
+    throw UnimplementedError('disableRemoteCommands() not implemented.');
+  }
+
+  /// Stream of remote command events from system media controls.
+  Stream<RemoteCommandEvent> get onRemoteCommand {
+    throw UnimplementedError('onRemoteCommand not implemented.');
+  }
 }

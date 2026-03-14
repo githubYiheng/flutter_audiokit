@@ -25,6 +25,18 @@ List<Object?> wrapResponse({Object? result, PlatformException? error, bool empty
   return <Object?>[error.code, error.message, error.details];
 }
 
+/// Remote command type from iOS system.
+enum PlatformRemoteCommand {
+  togglePlayPause,
+  play,
+  pause,
+  nextTrack,
+  previousTrack,
+  skipForward,
+  skipBackward,
+  changePlaybackPosition,
+}
+
 /// Handle referencing a native AudioKit node.
 class PlatformNodeHandle {
   PlatformNodeHandle({
@@ -248,6 +260,142 @@ class PlatformNodeParameterInfo {
   }
 }
 
+/// Metadata for iOS Now Playing Info Center.
+class PlatformNowPlayingInfo {
+  PlatformNowPlayingInfo({
+    required this.title,
+    required this.artist,
+    this.artworkAssetKey,
+    required this.isPlaying,
+    this.duration,
+    this.currentTime,
+    required this.isLiveStream,
+  });
+
+  String title;
+
+  String artist;
+
+  String? artworkAssetKey;
+
+  bool isPlaying;
+
+  double? duration;
+
+  double? currentTime;
+
+  bool isLiveStream;
+
+  Object encode() {
+    return <Object?>[
+      title,
+      artist,
+      artworkAssetKey,
+      isPlaying,
+      duration,
+      currentTime,
+      isLiveStream,
+    ];
+  }
+
+  static PlatformNowPlayingInfo decode(Object result) {
+    result as List<Object?>;
+    return PlatformNowPlayingInfo(
+      title: result[0]! as String,
+      artist: result[1]! as String,
+      artworkAssetKey: result[2] as String?,
+      isPlaying: result[3]! as bool,
+      duration: result[4] as double?,
+      currentTime: result[5] as double?,
+      isLiveStream: result[6]! as bool,
+    );
+  }
+}
+
+/// Configuration for which remote commands are enabled.
+class PlatformRemoteCommandConfig {
+  PlatformRemoteCommandConfig({
+    required this.playPauseEnabled,
+    required this.nextTrackEnabled,
+    required this.previousTrackEnabled,
+    required this.skipForwardEnabled,
+    required this.skipForwardInterval,
+    required this.skipBackwardEnabled,
+    required this.skipBackwardInterval,
+    required this.seekEnabled,
+  });
+
+  bool playPauseEnabled;
+
+  bool nextTrackEnabled;
+
+  bool previousTrackEnabled;
+
+  bool skipForwardEnabled;
+
+  double skipForwardInterval;
+
+  bool skipBackwardEnabled;
+
+  double skipBackwardInterval;
+
+  bool seekEnabled;
+
+  Object encode() {
+    return <Object?>[
+      playPauseEnabled,
+      nextTrackEnabled,
+      previousTrackEnabled,
+      skipForwardEnabled,
+      skipForwardInterval,
+      skipBackwardEnabled,
+      skipBackwardInterval,
+      seekEnabled,
+    ];
+  }
+
+  static PlatformRemoteCommandConfig decode(Object result) {
+    result as List<Object?>;
+    return PlatformRemoteCommandConfig(
+      playPauseEnabled: result[0]! as bool,
+      nextTrackEnabled: result[1]! as bool,
+      previousTrackEnabled: result[2]! as bool,
+      skipForwardEnabled: result[3]! as bool,
+      skipForwardInterval: result[4]! as double,
+      skipBackwardEnabled: result[5]! as bool,
+      skipBackwardInterval: result[6]! as double,
+      seekEnabled: result[7]! as bool,
+    );
+  }
+}
+
+/// Remote command event with optional position data.
+class PlatformRemoteCommandEvent {
+  PlatformRemoteCommandEvent({
+    required this.command,
+    this.position,
+  });
+
+  PlatformRemoteCommand command;
+
+  double? position;
+
+  Object encode() {
+    return <Object?>[
+      command,
+      position,
+    ];
+  }
+
+  static PlatformRemoteCommandEvent decode(Object result) {
+    result as List<Object?>;
+    return PlatformRemoteCommandEvent(
+      command: result[0]! as PlatformRemoteCommand,
+      position: result[1] as double?,
+    );
+  }
+}
+
 
 class _PigeonCodec extends StandardMessageCodec {
   const _PigeonCodec();
@@ -256,23 +404,35 @@ class _PigeonCodec extends StandardMessageCodec {
     if (value is int) {
       buffer.putUint8(4);
       buffer.putInt64(value);
-    }    else if (value is PlatformNodeHandle) {
+    }    else if (value is PlatformRemoteCommand) {
       buffer.putUint8(129);
-      writeValue(buffer, value.encode());
-    }    else if (value is PlatformAudioFileInfo) {
+      writeValue(buffer, value.index);
+    }    else if (value is PlatformNodeHandle) {
       buffer.putUint8(130);
       writeValue(buffer, value.encode());
-    }    else if (value is PlatformPlaybackState) {
+    }    else if (value is PlatformAudioFileInfo) {
       buffer.putUint8(131);
       writeValue(buffer, value.encode());
-    }    else if (value is PlatformAudioLevelData) {
+    }    else if (value is PlatformPlaybackState) {
       buffer.putUint8(132);
       writeValue(buffer, value.encode());
-    }    else if (value is PlatformPitchData) {
+    }    else if (value is PlatformAudioLevelData) {
       buffer.putUint8(133);
       writeValue(buffer, value.encode());
-    }    else if (value is PlatformNodeParameterInfo) {
+    }    else if (value is PlatformPitchData) {
       buffer.putUint8(134);
+      writeValue(buffer, value.encode());
+    }    else if (value is PlatformNodeParameterInfo) {
+      buffer.putUint8(135);
+      writeValue(buffer, value.encode());
+    }    else if (value is PlatformNowPlayingInfo) {
+      buffer.putUint8(136);
+      writeValue(buffer, value.encode());
+    }    else if (value is PlatformRemoteCommandConfig) {
+      buffer.putUint8(137);
+      writeValue(buffer, value.encode());
+    }    else if (value is PlatformRemoteCommandEvent) {
+      buffer.putUint8(138);
       writeValue(buffer, value.encode());
     } else {
       super.writeValue(buffer, value);
@@ -283,17 +443,26 @@ class _PigeonCodec extends StandardMessageCodec {
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
       case 129: 
-        return PlatformNodeHandle.decode(readValue(buffer)!);
+        final int? value = readValue(buffer) as int?;
+        return value == null ? null : PlatformRemoteCommand.values[value];
       case 130: 
-        return PlatformAudioFileInfo.decode(readValue(buffer)!);
+        return PlatformNodeHandle.decode(readValue(buffer)!);
       case 131: 
-        return PlatformPlaybackState.decode(readValue(buffer)!);
+        return PlatformAudioFileInfo.decode(readValue(buffer)!);
       case 132: 
-        return PlatformAudioLevelData.decode(readValue(buffer)!);
+        return PlatformPlaybackState.decode(readValue(buffer)!);
       case 133: 
-        return PlatformPitchData.decode(readValue(buffer)!);
+        return PlatformAudioLevelData.decode(readValue(buffer)!);
       case 134: 
+        return PlatformPitchData.decode(readValue(buffer)!);
+      case 135: 
         return PlatformNodeParameterInfo.decode(readValue(buffer)!);
+      case 136: 
+        return PlatformNowPlayingInfo.decode(readValue(buffer)!);
+      case 137: 
+        return PlatformRemoteCommandConfig.decode(readValue(buffer)!);
+      case 138: 
+        return PlatformRemoteCommandEvent.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
     }
@@ -1451,6 +1620,94 @@ class AudioKitHostApi {
       return;
     }
   }
+
+  Future<void> updateNowPlayingInfo(PlatformNowPlayingInfo info) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.updateNowPlayingInfo$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[info]) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> clearNowPlayingInfo() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.clearNowPlayingInfo$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> configureRemoteCommands(PlatformRemoteCommandConfig config) async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.configureRemoteCommands$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(<Object?>[config]) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
+
+  Future<void> disableRemoteCommands() async {
+    final String pigeonVar_channelName = 'dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.disableRemoteCommands$pigeonVar_messageChannelSuffix';
+    final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+      pigeonVar_channelName,
+      pigeonChannelCodec,
+      binaryMessenger: pigeonVar_binaryMessenger,
+    );
+    final List<Object?>? pigeonVar_replyList =
+        await pigeonVar_channel.send(null) as List<Object?>?;
+    if (pigeonVar_replyList == null) {
+      throw _createConnectionError(pigeonVar_channelName);
+    } else if (pigeonVar_replyList.length > 1) {
+      throw PlatformException(
+        code: pigeonVar_replyList[0]! as String,
+        message: pigeonVar_replyList[1] as String?,
+        details: pigeonVar_replyList[2],
+      );
+    } else {
+      return;
+    }
+  }
 }
 
 abstract class AudioKitFlutterApi {
@@ -1465,6 +1722,8 @@ abstract class AudioKitFlutterApi {
   void onError(String nodeId, String code, String message);
 
   void onPitchData(PlatformPitchData data);
+
+  void onRemoteCommand(PlatformRemoteCommandEvent event);
 
   static void setUp(AudioKitFlutterApi? api, {BinaryMessenger? binaryMessenger, String messageChannelSuffix = '',}) {
     messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
@@ -1590,6 +1849,31 @@ abstract class AudioKitFlutterApi {
               'Argument for dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onPitchData was null, expected non-null PlatformPitchData.');
           try {
             api.onPitchData(arg_data!);
+            return wrapResponse(empty: true);
+          } on PlatformException catch (e) {
+            return wrapResponse(error: e);
+          }          catch (e) {
+            return wrapResponse(error: PlatformException(code: 'error', message: e.toString()));
+          }
+        });
+      }
+    }
+    {
+      final BasicMessageChannel<Object?> pigeonVar_channel = BasicMessageChannel<Object?>(
+          'dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onRemoteCommand$messageChannelSuffix', pigeonChannelCodec,
+          binaryMessenger: binaryMessenger);
+      if (api == null) {
+        pigeonVar_channel.setMessageHandler(null);
+      } else {
+        pigeonVar_channel.setMessageHandler((Object? message) async {
+          assert(message != null,
+          'Argument for dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onRemoteCommand was null.');
+          final List<Object?> args = (message as List<Object?>?)!;
+          final PlatformRemoteCommandEvent? arg_event = (args[0] as PlatformRemoteCommandEvent?);
+          assert(arg_event != null,
+              'Argument for dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onRemoteCommand was null, expected non-null PlatformRemoteCommandEvent.');
+          try {
+            api.onRemoteCommand(arg_event!);
             return wrapResponse(empty: true);
           } on PlatformException catch (e) {
             return wrapResponse(error: e);

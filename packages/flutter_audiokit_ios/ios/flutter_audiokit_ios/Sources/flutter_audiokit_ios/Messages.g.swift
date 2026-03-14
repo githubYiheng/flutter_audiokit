@@ -68,6 +68,18 @@ private func nilOrValue<T>(_ value: Any?) -> T? {
   return value as! T?
 }
 
+/// Remote command type from iOS system.
+enum PlatformRemoteCommand: Int {
+  case togglePlayPause = 0
+  case play = 1
+  case pause = 2
+  case nextTrack = 3
+  case previousTrack = 4
+  case skipForward = 5
+  case skipBackward = 6
+  case changePlaybackPosition = 7
+}
+
 /// Handle referencing a native AudioKit node.
 ///
 /// Generated class from Pigeon that represents data sent in messages.
@@ -273,21 +285,155 @@ struct PlatformNodeParameterInfo {
   }
 }
 
+/// Metadata for iOS Now Playing Info Center.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlatformNowPlayingInfo {
+  var title: String
+  var artist: String
+  var artworkAssetKey: String? = nil
+  var isPlaying: Bool
+  var duration: Double? = nil
+  var currentTime: Double? = nil
+  var isLiveStream: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlatformNowPlayingInfo? {
+    let title = pigeonVar_list[0] as! String
+    let artist = pigeonVar_list[1] as! String
+    let artworkAssetKey: String? = nilOrValue(pigeonVar_list[2])
+    let isPlaying = pigeonVar_list[3] as! Bool
+    let duration: Double? = nilOrValue(pigeonVar_list[4])
+    let currentTime: Double? = nilOrValue(pigeonVar_list[5])
+    let isLiveStream = pigeonVar_list[6] as! Bool
+
+    return PlatformNowPlayingInfo(
+      title: title,
+      artist: artist,
+      artworkAssetKey: artworkAssetKey,
+      isPlaying: isPlaying,
+      duration: duration,
+      currentTime: currentTime,
+      isLiveStream: isLiveStream
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      title,
+      artist,
+      artworkAssetKey,
+      isPlaying,
+      duration,
+      currentTime,
+      isLiveStream,
+    ]
+  }
+}
+
+/// Configuration for which remote commands are enabled.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlatformRemoteCommandConfig {
+  var playPauseEnabled: Bool
+  var nextTrackEnabled: Bool
+  var previousTrackEnabled: Bool
+  var skipForwardEnabled: Bool
+  var skipForwardInterval: Double
+  var skipBackwardEnabled: Bool
+  var skipBackwardInterval: Double
+  var seekEnabled: Bool
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlatformRemoteCommandConfig? {
+    let playPauseEnabled = pigeonVar_list[0] as! Bool
+    let nextTrackEnabled = pigeonVar_list[1] as! Bool
+    let previousTrackEnabled = pigeonVar_list[2] as! Bool
+    let skipForwardEnabled = pigeonVar_list[3] as! Bool
+    let skipForwardInterval = pigeonVar_list[4] as! Double
+    let skipBackwardEnabled = pigeonVar_list[5] as! Bool
+    let skipBackwardInterval = pigeonVar_list[6] as! Double
+    let seekEnabled = pigeonVar_list[7] as! Bool
+
+    return PlatformRemoteCommandConfig(
+      playPauseEnabled: playPauseEnabled,
+      nextTrackEnabled: nextTrackEnabled,
+      previousTrackEnabled: previousTrackEnabled,
+      skipForwardEnabled: skipForwardEnabled,
+      skipForwardInterval: skipForwardInterval,
+      skipBackwardEnabled: skipBackwardEnabled,
+      skipBackwardInterval: skipBackwardInterval,
+      seekEnabled: seekEnabled
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      playPauseEnabled,
+      nextTrackEnabled,
+      previousTrackEnabled,
+      skipForwardEnabled,
+      skipForwardInterval,
+      skipBackwardEnabled,
+      skipBackwardInterval,
+      seekEnabled,
+    ]
+  }
+}
+
+/// Remote command event with optional position data.
+///
+/// Generated class from Pigeon that represents data sent in messages.
+struct PlatformRemoteCommandEvent {
+  var command: PlatformRemoteCommand
+  var position: Double? = nil
+
+
+  // swift-format-ignore: AlwaysUseLowerCamelCase
+  static func fromList(_ pigeonVar_list: [Any?]) -> PlatformRemoteCommandEvent? {
+    let command = pigeonVar_list[0] as! PlatformRemoteCommand
+    let position: Double? = nilOrValue(pigeonVar_list[1])
+
+    return PlatformRemoteCommandEvent(
+      command: command,
+      position: position
+    )
+  }
+  func toList() -> [Any?] {
+    return [
+      command,
+      position,
+    ]
+  }
+}
+
 private class MessagesPigeonCodecReader: FlutterStandardReader {
   override func readValue(ofType type: UInt8) -> Any? {
     switch type {
     case 129:
-      return PlatformNodeHandle.fromList(self.readValue() as! [Any?])
+      let enumResultAsInt: Int? = nilOrValue(self.readValue() as! Int?)
+      if let enumResultAsInt = enumResultAsInt {
+        return PlatformRemoteCommand(rawValue: enumResultAsInt)
+      }
+      return nil
     case 130:
-      return PlatformAudioFileInfo.fromList(self.readValue() as! [Any?])
+      return PlatformNodeHandle.fromList(self.readValue() as! [Any?])
     case 131:
-      return PlatformPlaybackState.fromList(self.readValue() as! [Any?])
+      return PlatformAudioFileInfo.fromList(self.readValue() as! [Any?])
     case 132:
-      return PlatformAudioLevelData.fromList(self.readValue() as! [Any?])
+      return PlatformPlaybackState.fromList(self.readValue() as! [Any?])
     case 133:
-      return PlatformPitchData.fromList(self.readValue() as! [Any?])
+      return PlatformAudioLevelData.fromList(self.readValue() as! [Any?])
     case 134:
+      return PlatformPitchData.fromList(self.readValue() as! [Any?])
+    case 135:
       return PlatformNodeParameterInfo.fromList(self.readValue() as! [Any?])
+    case 136:
+      return PlatformNowPlayingInfo.fromList(self.readValue() as! [Any?])
+    case 137:
+      return PlatformRemoteCommandConfig.fromList(self.readValue() as! [Any?])
+    case 138:
+      return PlatformRemoteCommandEvent.fromList(self.readValue() as! [Any?])
     default:
       return super.readValue(ofType: type)
     }
@@ -296,23 +442,35 @@ private class MessagesPigeonCodecReader: FlutterStandardReader {
 
 private class MessagesPigeonCodecWriter: FlutterStandardWriter {
   override func writeValue(_ value: Any) {
-    if let value = value as? PlatformNodeHandle {
+    if let value = value as? PlatformRemoteCommand {
       super.writeByte(129)
-      super.writeValue(value.toList())
-    } else if let value = value as? PlatformAudioFileInfo {
+      super.writeValue(value.rawValue)
+    } else if let value = value as? PlatformNodeHandle {
       super.writeByte(130)
       super.writeValue(value.toList())
-    } else if let value = value as? PlatformPlaybackState {
+    } else if let value = value as? PlatformAudioFileInfo {
       super.writeByte(131)
       super.writeValue(value.toList())
-    } else if let value = value as? PlatformAudioLevelData {
+    } else if let value = value as? PlatformPlaybackState {
       super.writeByte(132)
       super.writeValue(value.toList())
-    } else if let value = value as? PlatformPitchData {
+    } else if let value = value as? PlatformAudioLevelData {
       super.writeByte(133)
       super.writeValue(value.toList())
-    } else if let value = value as? PlatformNodeParameterInfo {
+    } else if let value = value as? PlatformPitchData {
       super.writeByte(134)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlatformNodeParameterInfo {
+      super.writeByte(135)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlatformNowPlayingInfo {
+      super.writeByte(136)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlatformRemoteCommandConfig {
+      super.writeByte(137)
+      super.writeValue(value.toList())
+    } else if let value = value as? PlatformRemoteCommandEvent {
+      super.writeByte(138)
       super.writeValue(value.toList())
     } else {
       super.writeValue(value)
@@ -387,6 +545,10 @@ protocol AudioKitHostApi {
   func setGlobalSampleRate(sampleRate: Double) throws
   func setGlobalBufferLength(bufferLengthPower: Int64) throws
   func setLogLevel(level: Int64) throws
+  func updateNowPlayingInfo(info: PlatformNowPlayingInfo) throws
+  func clearNowPlayingInfo() throws
+  func configureRemoteCommands(config: PlatformRemoteCommandConfig) throws
+  func disableRemoteCommands() throws
 }
 
 /// Generated setup class from Pigeon to handle messages through the `binaryMessenger`.
@@ -1174,6 +1336,62 @@ class AudioKitHostApiSetup {
     } else {
       setLogLevelChannel.setMessageHandler(nil)
     }
+    let updateNowPlayingInfoChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.updateNowPlayingInfo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      updateNowPlayingInfoChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let infoArg = args[0] as! PlatformNowPlayingInfo
+        do {
+          try api.updateNowPlayingInfo(info: infoArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      updateNowPlayingInfoChannel.setMessageHandler(nil)
+    }
+    let clearNowPlayingInfoChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.clearNowPlayingInfo\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      clearNowPlayingInfoChannel.setMessageHandler { _, reply in
+        do {
+          try api.clearNowPlayingInfo()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      clearNowPlayingInfoChannel.setMessageHandler(nil)
+    }
+    let configureRemoteCommandsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.configureRemoteCommands\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      configureRemoteCommandsChannel.setMessageHandler { message, reply in
+        let args = message as! [Any?]
+        let configArg = args[0] as! PlatformRemoteCommandConfig
+        do {
+          try api.configureRemoteCommands(config: configArg)
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      configureRemoteCommandsChannel.setMessageHandler(nil)
+    }
+    let disableRemoteCommandsChannel = FlutterBasicMessageChannel(name: "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitHostApi.disableRemoteCommands\(channelSuffix)", binaryMessenger: binaryMessenger, codec: codec)
+    if let api = api {
+      disableRemoteCommandsChannel.setMessageHandler { _, reply in
+        do {
+          try api.disableRemoteCommands()
+          reply(wrapResult(nil))
+        } catch {
+          reply(wrapError(error))
+        }
+      }
+    } else {
+      disableRemoteCommandsChannel.setMessageHandler(nil)
+    }
   }
 }
 /// Generated protocol from Pigeon that represents Flutter messages that can be called from Swift.
@@ -1183,6 +1401,7 @@ protocol AudioKitFlutterApiProtocol {
   func onAmplitudeData(data dataArg: PlatformAudioLevelData, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func onError(nodeId nodeIdArg: String, code codeArg: String, message messageArg: String, completion: @escaping (Result<Void, PigeonError>) -> Void)
   func onPitchData(data dataArg: PlatformPitchData, completion: @escaping (Result<Void, PigeonError>) -> Void)
+  func onRemoteCommand(event eventArg: PlatformRemoteCommandEvent, completion: @escaping (Result<Void, PigeonError>) -> Void)
 }
 class AudioKitFlutterApi: AudioKitFlutterApiProtocol {
   private let binaryMessenger: FlutterBinaryMessenger
@@ -1270,6 +1489,24 @@ class AudioKitFlutterApi: AudioKitFlutterApiProtocol {
     let channelName: String = "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onPitchData\(messageChannelSuffix)"
     let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
     channel.sendMessage([dataArg] as [Any?]) { response in
+      guard let listResponse = response as? [Any?] else {
+        completion(.failure(createConnectionError(withChannelName: channelName)))
+        return
+      }
+      if listResponse.count > 1 {
+        let code: String = listResponse[0] as! String
+        let message: String? = nilOrValue(listResponse[1])
+        let details: String? = nilOrValue(listResponse[2])
+        completion(.failure(PigeonError(code: code, message: message, details: details)))
+      } else {
+        completion(.success(Void()))
+      }
+    }
+  }
+  func onRemoteCommand(event eventArg: PlatformRemoteCommandEvent, completion: @escaping (Result<Void, PigeonError>) -> Void) {
+    let channelName: String = "dev.flutter.pigeon.flutter_audiokit_ios.AudioKitFlutterApi.onRemoteCommand\(messageChannelSuffix)"
+    let channel = FlutterBasicMessageChannel(name: channelName, binaryMessenger: binaryMessenger, codec: codec)
+    channel.sendMessage([eventArg] as [Any?]) { response in
       guard let listResponse = response as? [Any?] else {
         completion(.failure(createConnectionError(withChannelName: channelName)))
         return

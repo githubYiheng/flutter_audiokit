@@ -31,6 +31,8 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   final _playbackCompletedController = StreamController<String>.broadcast();
   final _amplitudeController = StreamController<AudioLevelData>.broadcast();
   final _pitchController = StreamController<PitchData>.broadcast();
+  final _remoteCommandController =
+      StreamController<RemoteCommandEvent>.broadcast();
 
   /// Registers this class as the platform implementation.
   static void registerWith() {
@@ -73,6 +75,17 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
           rightPitch: data.rightPitch,
           leftAmplitude: data.leftAmplitude,
           rightAmplitude: data.rightAmplitude,
+        ));
+      },
+      onRemoteCommandEvent: (event) {
+        final commandIndex = event.command.index;
+        final command = commandIndex >= 0 &&
+                commandIndex < RemoteCommand.values.length
+            ? RemoteCommand.values[commandIndex]
+            : RemoteCommand.togglePlayPause;
+        _remoteCommandController.add(RemoteCommandEvent(
+          command: command,
+          position: event.position,
         ));
       },
     );
@@ -378,6 +391,53 @@ class FlutterAudioKitIOS extends FlutterAudioKitPlatform {
   @override
   Future<void> setLogLevel(int level) async =>
       _hostApi.setLogLevel(level);
+
+  // ==== Now Playing ====
+
+  @override
+  Future<void> updateNowPlayingInfo({
+    required String title,
+    required String artist,
+    String? artworkAssetKey,
+    required bool isPlaying,
+    double? duration,
+    double? currentTime,
+    bool isLiveStream = true,
+  }) async =>
+      _hostApi.updateNowPlayingInfo(PlatformNowPlayingInfo(
+        title: title,
+        artist: artist,
+        artworkAssetKey: artworkAssetKey,
+        isPlaying: isPlaying,
+        duration: duration,
+        currentTime: currentTime,
+        isLiveStream: isLiveStream,
+      ));
+
+  @override
+  Future<void> clearNowPlayingInfo() async =>
+      _hostApi.clearNowPlayingInfo();
+
+  @override
+  Future<void> configureRemoteCommands(RemoteCommandConfig config) async =>
+      _hostApi.configureRemoteCommands(PlatformRemoteCommandConfig(
+        playPauseEnabled: config.playPauseEnabled,
+        nextTrackEnabled: config.nextTrackEnabled,
+        previousTrackEnabled: config.previousTrackEnabled,
+        skipForwardEnabled: config.skipForwardEnabled,
+        skipForwardInterval: config.skipForwardInterval,
+        skipBackwardEnabled: config.skipBackwardEnabled,
+        skipBackwardInterval: config.skipBackwardInterval,
+        seekEnabled: config.seekEnabled,
+      ));
+
+  @override
+  Future<void> disableRemoteCommands() async =>
+      _hostApi.disableRemoteCommands();
+
+  @override
+  Stream<RemoteCommandEvent> get onRemoteCommand =>
+      _remoteCommandController.stream;
 }
 
 /// Internal handler for Swift -> Dart callbacks via Pigeon's FlutterApi.
@@ -388,6 +448,7 @@ class _FlutterApiHandler implements AudioKitFlutterApi {
     required this.onAmplitude,
     required this.onErrorCallback,
     required this.onPitch,
+    required this.onRemoteCommandEvent,
   });
 
   final void Function(PlatformPlaybackState) onPlaybackState;
@@ -395,6 +456,7 @@ class _FlutterApiHandler implements AudioKitFlutterApi {
   final void Function(PlatformAudioLevelData) onAmplitude;
   final void Function(String nodeId, String code, String message) onErrorCallback;
   final void Function(PlatformPitchData) onPitch;
+  final void Function(PlatformRemoteCommandEvent) onRemoteCommandEvent;
 
   @override
   void onPlaybackStateChanged(PlatformPlaybackState state) =>
@@ -412,4 +474,8 @@ class _FlutterApiHandler implements AudioKitFlutterApi {
 
   @override
   void onPitchData(PlatformPitchData data) => onPitch(data);
+
+  @override
+  void onRemoteCommand(PlatformRemoteCommandEvent event) =>
+      onRemoteCommandEvent(event);
 }
