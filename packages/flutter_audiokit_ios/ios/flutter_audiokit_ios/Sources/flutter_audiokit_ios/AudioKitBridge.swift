@@ -233,7 +233,9 @@ class AudioKitBridge: AudioKitHostApi {
     func playerPlay(nodeId: String, startTime: Double?, endTime: Double?) throws {
         let player = try getPlayer(nodeId)
 
-        // C-5: Set completionHandler BEFORE play() to avoid race on short audio files
+        // C-5: Set completionHandler BEFORE play() to avoid race on short audio files.
+        // For buffered+looping players, this handler won't fire (AudioKit skips it
+        // when using scheduleBuffer with .loops).
         player.completionHandler = { [weak self] in
             self?.stopProgressTimer(nodeId: nodeId)
             self?.flutterApi?.onPlaybackCompleted(nodeId: nodeId) { _ in }
@@ -243,7 +245,7 @@ class AudioKitBridge: AudioKitHostApi {
             from: startTime.map { TimeInterval($0) },
             to: endTime.map { TimeInterval($0) }
         )
-        logInfo("AudioPlayer \(nodeId) play (from=\(startTime as Any), to=\(endTime as Any))")
+        logInfo("AudioPlayer \(nodeId) play (from=\(startTime as Any), to=\(endTime as Any), looping=\(player.isLooping))")
 
         sendPlayerState(nodeId: nodeId, player: player)
         startProgressTimer(nodeId: nodeId)
@@ -288,8 +290,14 @@ class AudioKitBridge: AudioKitHostApi {
 
     func setPlayerIsLooping(nodeId: String, isLooping: Bool) throws {
         let player = try getPlayer(nodeId)
+        // AudioKit's .loops buffer option only works in buffered mode.
+        // Enable buffering so schedule() uses scheduleBuffer(.loops)
+        // instead of scheduleSegment (which plays once and stops).
+        if isLooping && !player.isBuffered {
+            player.isBuffered = true
+        }
         player.isLooping = isLooping
-        logVerbose("AudioPlayer \(nodeId) isLooping = \(isLooping)")
+        logVerbose("AudioPlayer \(nodeId) isLooping = \(isLooping) (buffered = \(player.isBuffered))")
     }
 
     func setPlayerIsReversed(nodeId: String, isReversed: Bool) throws {
