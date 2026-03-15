@@ -1109,11 +1109,21 @@ class AudioKitBridge: AudioKitHostApi {
         if assetKey == cachedArtworkKey, let cached = cachedArtwork {
             return cached
         }
-        let flutterKey = FlutterDartProject.lookupKey(forAsset: assetKey)
-        guard let path = Bundle.main.path(forResource: flutterKey, ofType: nil),
-              let image = UIImage(contentsOfFile: path) else {
-            return nil
+
+        let image: UIImage?
+        if assetKey.hasPrefix("/") {
+            // Absolute file path (e.g., cached download from Flutter)
+            image = UIImage(contentsOfFile: assetKey)
+        } else {
+            // Flutter asset key
+            let flutterKey = FlutterDartProject.lookupKey(forAsset: assetKey)
+            guard let path = Bundle.main.path(forResource: flutterKey, ofType: nil) else {
+                return nil
+            }
+            image = UIImage(contentsOfFile: path)
         }
+
+        guard let image else { return nil }
         let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
         cachedArtworkKey = assetKey
         cachedArtwork = artwork
